@@ -90,6 +90,7 @@
 
 ### 데이터 구조
 
+![ERD](./public/images/erd_chart.png)
 <!-- DB 스키마, JSON 구조, 파일 저장 방식 등 -->
 
 ### API / 외부 서비스 연동

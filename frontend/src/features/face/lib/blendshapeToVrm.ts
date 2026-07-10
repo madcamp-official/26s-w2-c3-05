@@ -1,3 +1,4 @@
+import * as THREE from "three";                    // ← 추가
 import type { Category } from "@mediapipe/tasks-vision";
 import type { VRM } from "@pixiv/three-vrm";
 import type { FaceParams } from "../types";
@@ -15,11 +16,22 @@ export function blendshapeToExpressions(categories: Category[]): Record<string, 
   };
 }
 
-// FaceParams를 실제 아바타에 적용 (지금은 표정만; 머리회전은 5단계에서 추가)
+const _headQuat = new THREE.Quaternion();          // ← 재사용용
+
 export function applyFaceParams(vrm: VRM, params: FaceParams) {
+  // 표정
   const em = vrm.expressionManager;
-  if (!em) return; // 표정 없는 모델 방어
-  for (const [name, value] of Object.entries(params.expressions)) {
-    em.setValue(name, value);
+  if (em) {
+    for (const [name, value] of Object.entries(params.expressions)) {
+      em.setValue(name, value);
+    }
+  }
+
+  // 머리 회전
+  const head = vrm.humanoid?.getNormalizedBoneNode("head");
+  if (head) {
+    const { x, y, z, w } = params.headRotation;
+    _headQuat.set(x, y, z, w);
+    head.quaternion.slerp(_headQuat, 0.4); // 0.4로 부드럽게 보간 = 공짜 노이즈 필터
   }
 }

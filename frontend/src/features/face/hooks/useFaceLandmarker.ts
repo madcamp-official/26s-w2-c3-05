@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { createFaceLandmarker } from "../lib/faceLandmarker";
 import { blendshapeToExpressions } from "../lib/blendshapeToVrm";
+import { matrixToHeadRotation } from "../lib/headRotation";   // ← 추가
+// detectForVideo 결과에서 행렬도 함께 꺼내 faceParamsRef에 넣습니다
 import type { FaceParamsRef } from "../types";
 
 export function useFaceLandmarker(
@@ -30,11 +32,14 @@ export function useFaceLandmarker(
           lastVideoTime = video.currentTime;
           const result = landmarker.detectForVideo(video, performance.now());
           const cats = result.faceBlendshapes?.[0]?.categories;
+          const matrix = result.facialTransformationMatrixes?.[0]?.data; // ← 추가
           if (cats) {
             // 콘솔 로그 대신 이제 상자에 기록
             faceParamsRef.current = {
               expressions: blendshapeToExpressions(cats),
-              headRotation: faceParamsRef.current.headRotation, // 5단계에서 채움
+              // 행렬이 있으면 회전 갱신, 없으면 직전 값 유지
+              headRotation: matrix ? matrixToHeadRotation(matrix) :
+              faceParamsRef.current.headRotation, // 5단계에서 채움
               timestamp: performance.now(),
             };
           }

@@ -48,6 +48,13 @@ export function VRMAvatar({ faceParamsRef }: { faceParamsRef: FaceParamsRef }) {
         vrm = gltf.userData.vrm as VRM;    // 파싱된 VRM은 여기에 담김
         VRMUtils.rotateVRM0(vrm);          // VRM0.x 모델이 뒤돌아 있는 것 보정
         scene.add(vrm.scene);
+
+        // ↓ 추가: T포즈 → 팔을 아래로 내린 정지 자세
+            const rad = THREE.MathUtils.degToRad(70); // 내리는 각도 (65~75 사이 취향껏)
+            const leftArm = vrm.humanoid?.getNormalizedBoneNode("leftUpperArm");
+            const rightArm = vrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
+            if (leftArm) leftArm.rotation.z = rad;
+            if (rightArm) rightArm.rotation.z = -rad;
       })
       .catch((e) => console.error("VRM 로드 실패:", e));
 

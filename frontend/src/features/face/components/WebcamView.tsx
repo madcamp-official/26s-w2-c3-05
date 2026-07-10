@@ -1,9 +1,11 @@
 import { useWebcam } from "../hooks/useWebcam";
 import { useFaceLandmarker } from "../hooks/useFaceLandmarker";
+import type { FaceParamsRef } from "../types";
 
-export function WebcamView() {
+export function WebcamView({ faceParamsRef }: { faceParamsRef: FaceParamsRef }) {
+    // faceParamsRef를 받아서 비디오와 동기화
   const { videoRef, error } = useWebcam();
-  useFaceLandmarker(videoRef); // ← 추가: 같은 video를 분석
+  useFaceLandmarker(videoRef, faceParamsRef); // ← 상자 넘김
 
   if (error) return <p style={{ color: "red" }}>카메라 오류: {error}</p>;
 

@@ -1,9 +1,12 @@
 import { useEffect, useRef } from "react";
 import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { createFaceLandmarker } from "../lib/faceLandmarker";
+import { blendshapeToExpressions } from "../lib/blendshapeToVrm";
+import type { FaceParamsRef } from "../types";
 
 export function useFaceLandmarker(
-  videoRef: React.RefObject<HTMLVideoElement | null>
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+  faceParamsRef: FaceParamsRef            // -> box에 write
 ) {
   const landmarkerRef = useRef<FaceLandmarker | null>(null);
 
@@ -26,15 +29,14 @@ export function useFaceLandmarker(
         if (video && video.readyState >= 2 && video.currentTime !== lastVideoTime) {
           lastVideoTime = video.currentTime;
           const result = landmarker.detectForVideo(video, performance.now());
-          const bs = result.faceBlendshapes?.[0]?.categories;
-          if (bs) {
-            const get = (name: string) =>
-              bs.find((c) => c.categoryName === name)?.score ?? 0;
-            console.log(
-              "jawOpen", get("jawOpen").toFixed(2),
-              "| blinkL", get("eyeBlinkLeft").toFixed(2),
-              "| blinkR", get("eyeBlinkRight").toFixed(2)
-            );
+          const cats = result.faceBlendshapes?.[0]?.categories;
+          if (cats) {
+            // 콘솔 로그 대신 이제 상자에 기록
+            faceParamsRef.current = {
+              expressions: blendshapeToExpressions(cats),
+              headRotation: faceParamsRef.current.headRotation, // 5단계에서 채움
+              timestamp: performance.now(),
+            };
           }
         }
         rafId = requestAnimationFrame(loop);
@@ -48,7 +50,7 @@ export function useFaceLandmarker(
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
     };
-  }, [videoRef]);
+  }, [videoRef, faceParamsRef]);
 
   return landmarkerRef;
 }

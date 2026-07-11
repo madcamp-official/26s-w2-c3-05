@@ -28,7 +28,13 @@ export default function App() {
         />
       );
     case 'lobby':
-      return <LobbyPage nick={nick} onJoin={(room) => setStage({ screen: 'waiting', room })} />;
+      return (
+        <LobbyPage
+          nick={nick}
+          onRetreat={() => setStage({ screen: 'login' })}
+          onJoin={(room) => setStage({ screen: 'waiting', room })} 
+        />
+      );
     case 'waiting':
       return (
         <WaitingPage

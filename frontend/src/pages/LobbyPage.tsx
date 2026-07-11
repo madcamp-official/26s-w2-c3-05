@@ -1,6 +1,6 @@
 import type { Room } from '../types/game';
 import { ROOMS } from '../constants/game';
-import { Divider, Seal, Backdrop, GOLD, primaryBtn } from '../components/ui';
+import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 
 export default function LobbyPage({ nick, onJoin }: { nick: string; onJoin: (room: Room) => void }) {
   return (
@@ -39,6 +39,12 @@ export default function LobbyPage({ nick, onJoin }: { nick: string; onJoin: (roo
           {ROOMS.map((r) => (
             <RoomCard key={r.name} room={r} onJoin={() => onJoin(r)} />
           ))}
+        </div>
+        <Divider margin="26px 0 30px" />
+        <div>
+          <button style={{ ...ghostBtn, padding: '12px 20px', fontSize: 14, letterSpacing: 2 }}>
+            나가기
+          </button>
         </div>
       </div>
     </Backdrop>

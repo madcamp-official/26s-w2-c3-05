@@ -15,12 +15,12 @@ export const BOTS: Bot[] = [
 
 /** 데모용 방 목록 */
 export const ROOMS: Room[] = [
-  { name: '모란정', hanja: '牡丹亭', host: '매향', count: 3, cap: 6, open: true },
-  { name: '봉황궁', hanja: '鳳凰宮', host: '임소상', count: 5, cap: 6, open: false },
-  { name: '옥로전', hanja: '玉露殿', host: '화예비', count: 2, cap: 5, open: true },
-  { name: '청운각', hanja: '靑雲閣', host: '한서정', count: 6, cap: 6, open: false },
-  { name: '월하방', hanja: '月下房', host: '유란', count: 1, cap: 5, open: true },
-  { name: '금란지', hanja: '金蘭池', host: '소백향', count: 4, cap: 6, open: true },
+  { name: '모란정', host: '매향', count: 3, cap: 6, open: true },
+  { name: '봉황궁', host: '임소상', count: 5, cap: 6, open: false },
+  { name: '옥로전', host: '화예비', count: 2, cap: 5, open: true },
+  { name: '청운각', host: '한서정', count: 6, cap: 6, open: false },
+  { name: '월하방', host: '유란', count: 1, cap: 5, open: true },
+  { name: '금란지', host: '소백향', count: 4, cap: 6, open: true },
 ];
 
 export const BOT_LINES = [

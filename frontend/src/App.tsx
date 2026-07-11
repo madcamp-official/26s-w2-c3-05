@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import type { UserInfo, PlayerInfo, Stat, Room, Scores, Topic } from './types/game';
-import { signup, login } from './api/auth';
+import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
 import LobbyPage from './pages/LobbyPage';
 import WaitingPage from './pages/WaitingPage';
@@ -494,26 +493,89 @@ export async function getTopicByID(topicId: number): Promise<Topic> {
   return topic;
 }
 
-export async function postTopic(): Promise<number> {
-  const topic = await request<Topic>(`/topics`, {
-    method: "GET",
+// !! WIP !!
+// 인증 필요
+export async function postTopic(topicId: number, topicHead: string): Promise<number> {
+  const response = await request<number>(`/topics`, {
+    method: "POST",
     headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      topic_id: topicId,
+      topic_head: topicHead
+    })
   });
   
-  return topic;
+  return response
+}
+
+// !! WIP !!
+// 인증 필요
+export async function putTopic(topicId: number, topicHead: string): Promise<number> {
+  const response = await request<number>(`/topics/${topicId}`, {
+    method: "PUT",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      topic_id: topicId,
+      topic_head: topicHead
+    })
+  });
+  
+  return response
+}
+
+// !! WIP !!
+// 인증 필요
+export async function postTopic(topicId: number): Promise<number> {
+  const response = await request<number>(`/topics/${topicId}`, {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      topic_id: topicId
+    })
+  });
+  
+  return response
 }
 
 // - - - - - - - - - - - - - - - - - - - -
-// 7. 방 로비 `/rooms/{roomId}/game`
+// 7. 친구 `/friends`
+// - - - - - - - - - - - - - - - - - - - -
+
+export async function getFriends(): Promise<UserFriends[]> {
+  const friends = await request<UserFriends[]>(`/friends`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return friends;
+}
+
+// !! WIP !! 
+export async function getFriendsRequests(): Promise<Notification[]> {
+  const friends = await request<UserFriends[]>(`/friends/requests/received`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return friends;
+}
+
+// - - - - - - - - - - - - - - - - - - - -
+// 8. 알림 `/notifications`
 // - - - - - - - - - - - - - - - - - - - -
 
 // - - - - - - - - - - - - - - - - - - - -
-// 8. 방 로비 `/rooms/{roomId}/game`
+// 9. 실시간 게임 (WebSocket / STOMP)
 // - - - - - - - - - - - - - - - - - - - -
 
+
 // - - - - - - - - - - - - - - - - - - - -
-// 9. 방 로비 `/rooms/{roomId}/game`
+// 10. 시스템 · 메타
 // - - - - - - - - - - - - - - - - - - - -
+
 
 type Stage =
   | { screen: 'login' }
@@ -530,15 +592,7 @@ export default function App() {
     case 'login':
       return (
         <LoginPage
-          onEnter={async (name) => {
-            // 연동 확인용: 입력한 궁호를 userId로, 임시 비번으로 가입→로그인 왕복
-            try {
-              await signup(name, 'test1234', name).catch(() => {}); // 이미 있으면(409) 무시
-              const { accessToken } = await login(name, 'test1234');
-              console.log('✅ 백엔드 토큰 수신:', accessToken);
-            } catch (e) {
-              console.error('❌ 백엔드 통신 실패:', e);
-            }
+          onEnter={(name) => {
             setNick(name);
             setStage({ screen: 'lobby' });
           }}

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Room, Scores } from './types/game';
+import type { UserInfo, PlayerInfo, Stat, Room, Scores, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
 import LobbyPage from './pages/LobbyPage';
 import WaitingPage from './pages/WaitingPage';
@@ -8,8 +8,25 @@ import ResultPage from './pages/ResultPage';
 
 const BASE_URL = 'https://example.com';
 
+const HEADER = {
+  "Content-Type": "application/json",
+  "Authorization": "Bearer {accessToken}"
+};
+
+type GetRequestInit = Omit<RequestInit, 'method' | 'body'> & {
+  method: 'GET' | 'HEAD';
+  body?: never;
+}
+
+type BodyRequestInit = Omit<RequestInit, 'method' | 'body'> & {
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  body?: BodyInit | null;
+}
+
+export type StrictRequestInit = GetRequestInit | BodyRequestInit;
+
 // 범용 API 요청 함수
-export async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+export async function request<T>(endpoint: string, options?: StrictRequestInit): Promise<T> {
   const response = await fetch(`${BASE_URL}${endpoint}`, options);
 
   if (!response.ok) {
@@ -25,6 +42,82 @@ export async function request<T>(endpoint: string, options?: RequestInit): Promi
 //   const user = await request<User>('https://example.com');
 //   console.log(user.name); 
 // }
+
+
+// - - - - - - - - - - - - - - - - - - - -
+// 3. 유저 `/users`
+// - - - - - - - - - - - - - - - - - - - -
+
+export async function getUserInfo(): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me', {
+    method: "GET",
+    headers: HEADER
+  });
+
+  return user;
+}
+
+export async function patchUserNickname(nickname: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me', {
+    method: "PATCH",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere  
+      user_nickname: nickname })
+    });
+
+  return user;
+}
+
+export async function patchUserPassword(password: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me/password', {
+    method: "PATCH",
+    headers: HEADER,
+    body: JSON.stringify({ 
+      user_id: userId, // get userid from somewhere  
+      user_pw: password })
+    });
+
+  return user;
+}
+
+export async function putUserProfile(profile: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me/profile', {
+    method: "PUT",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      user_profile: profile })
+    });
+
+  return user;
+}
+
+export async function deleteUserProfile(profile: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me/profile', {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere   
+      user_profile: profile })
+    });
+
+  return user;
+}
+
+export async function getUserProfile(profile: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/{userId}/profile', {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere   
+      user_profile: profile })
+    });
+
+  return user;
+}
+
+
 
 
 type Stage =

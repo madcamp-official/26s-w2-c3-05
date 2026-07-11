@@ -1,0 +1,590 @@
+{
+  "entityData": [
+    {
+      "_id": "5jYwps2x9dwnMqFZa",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "topic",
+      "name": "topic",
+      "position": {
+        "x": 520,
+        "y": 400
+      },
+      "keys": {
+        "pks": [
+          {
+            "_id": "XdL8ziqXx6jkaXneS",
+            "name": "topic_id",
+            "pName": "topic_id",
+            "domain": "",
+            "type": "INT",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": null,
+            "relFieldId": null,
+            "relType": null
+          }
+        ],
+        "fks": []
+      },
+      "fields": [
+        {
+          "_id": "ZCy4vaYe4jQRYgZzw",
+          "name": "topic_head",
+          "pName": "topic_head",
+          "domain": "",
+          "type": "TEXT",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(178, 117, 0, 0.5)"
+    },
+    {
+      "_id": "5vJoLhqeS9hHgRswQ",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "user_friends",
+      "name": "user_friends",
+      "position": {
+        "x": 380,
+        "y": 580
+      },
+      "keys": {
+        "pks": [],
+        "fks": [
+          {
+            "_id": "NWSLoZeo9efxLCkvg",
+            "name": "from_id",
+            "pName": "from_id",
+            "domain": "",
+            "type": "VARCHAR(16)",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": "Pz9orWE7XGmbgjLHz",
+            "relFieldId": "yRGdtJpBCJfSYWgw9",
+            "relType": "ZERO_OR_ONE_OR_MANY"
+          },
+          {
+            "_id": "ScHS6edH4zxTCCHjk",
+            "name": "to_id",
+            "pName": "to_id",
+            "domain": "",
+            "type": "VARCHAR(16)",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": "Pz9orWE7XGmbgjLHz",
+            "relFieldId": "yRGdtJpBCJfSYWgw9",
+            "relType": "ZERO_OR_ONE_OR_MANY"
+          }
+        ]
+      },
+      "fields": [
+        {
+          "_id": "z56xeZ4WZZ7cEGYXZ",
+          "name": "friend_date",
+          "pName": "friend_date",
+          "domain": "",
+          "type": "TIMESTAMPTZ",
+          "defaultValue": "now()",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "rMtZqFvQQ65CmqyQw",
+          "name": "friend_status",
+          "pName": "friend_status",
+          "domain": "",
+          "type": "friendtype_t",
+          "defaultValue": "'NONE'",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(178, 27, 0, 0.5)"
+    },
+    {
+      "_id": "8czK6dhKCJN5vQtmo",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "stat",
+      "name": "stat",
+      "position": {
+        "x": 620,
+        "y": 790
+      },
+      "keys": {
+        "pks": [],
+        "fks": [
+          {
+            "_id": "849WrSwhewX4xCC72",
+            "name": "user_id",
+            "pName": "user_id",
+            "domain": "",
+            "type": "VARCHAR(16)",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": "Pz9orWE7XGmbgjLHz",
+            "relFieldId": "yRGdtJpBCJfSYWgw9",
+            "relType": "ZERO_OR_ONE_OR_MANY"
+          }
+        ]
+      },
+      "fields": [
+        {
+          "_id": "HEGXyfTJHuAwSgy6e",
+          "name": "user_rank",
+          "pName": "user_rank",
+          "domain": "",
+          "type": "ranktype_t",
+          "defaultValue": "'NONE'",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "dqyDK7DChcHSCnJQ5",
+          "name": "user_point",
+          "pName": "user_point",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "0",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "Fue3qt2oabz5CMvap",
+          "name": "user_win",
+          "pName": "user_win",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "0",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "sxLwrtLAF47ZxYRZf",
+          "name": "user_lose",
+          "pName": "user_lose",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "0",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "DMrh6HzTzw3QqKkbq",
+          "name": "user_played",
+          "pName": "user_played",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "0",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(0, 178, 100, 0.5)"
+    },
+    {
+      "_id": "LkfbY2hw3iLjAeWDx",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "notification",
+      "name": "notification",
+      "position": {
+        "x": 1110,
+        "y": 790
+      },
+      "keys": {
+        "pks": [
+          {
+            "_id": "HRfSnu29Yro5ZXPQT",
+            "name": "notice_num",
+            "pName": "notice_num",
+            "domain": "",
+            "type": "BIGINT",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": null,
+            "relFieldId": null,
+            "relType": null
+          }
+        ],
+        "fks": []
+      },
+      "fields": [
+        {
+          "_id": "LagCwkiJiQfBrWiaK",
+          "name": "recipient_id",
+          "pName": "recipient_id",
+          "domain": "",
+          "type": "VARCHAR(16)",
+          "defaultValue": "",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": "Pz9orWE7XGmbgjLHz",
+          "relFieldId": "yRGdtJpBCJfSYWgw9",
+          "relType": "ZERO_OR_ONE_OR_MANY"
+        },
+        {
+          "_id": "Q5zoRdGfsuD7W9WJo",
+          "name": "actor_id",
+          "pName": "actor_id",
+          "domain": "",
+          "type": "VARCHAR(16)",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": "Pz9orWE7XGmbgjLHz",
+          "relFieldId": "yRGdtJpBCJfSYWgw9",
+          "relType": "ZERO_OR_ONE_OR_MANY"
+        },
+        {
+          "_id": "bLNQG84FFDsxaCm9m",
+          "name": "type",
+          "pName": "type",
+          "domain": "",
+          "type": "notificationtype_t",
+          "defaultValue": "",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "aqpA5usLbp5TyCouK",
+          "name": "is_read",
+          "pName": "is_read",
+          "domain": "",
+          "type": "BOOLEAN",
+          "defaultValue": "false",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "MjMR2EmtpGBjewgk9",
+          "name": "created_at",
+          "pName": "created_at",
+          "domain": "",
+          "type": "TIMESTAMPTZ",
+          "defaultValue": "now()",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(123, 0, 178, 0.5)"
+    },
+    {
+      "_id": "Pz9orWE7XGmbgjLHz",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "user_info",
+      "name": "user_info",
+      "position": {
+        "x": 830,
+        "y": 580
+      },
+      "keys": {
+        "pks": [
+          {
+            "_id": "yRGdtJpBCJfSYWgw9",
+            "name": "user_id",
+            "pName": "user_id",
+            "domain": "",
+            "type": "VARCHAR(16)",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": null,
+            "relFieldId": null,
+            "relType": null
+          }
+        ],
+        "fks": []
+      },
+      "fields": [
+        {
+          "_id": "tuyxQ2rNQhQ5EsmcC",
+          "name": "user_pw",
+          "pName": "user_pw",
+          "domain": "",
+          "type": "VARCHAR(255)",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "ir5wn2kft9gzviAuF",
+          "name": "registered_at",
+          "pName": "registered_at",
+          "domain": "",
+          "type": "TIMESTAMPTZ",
+          "defaultValue": "now()",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "ruZSijg2b6PJjFCqm",
+          "name": "user_nickname",
+          "pName": "user_nickname",
+          "domain": "",
+          "type": "VARCHAR(12)",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "ujzMkC5cvrwMG7CYu",
+          "name": "user_profile",
+          "pName": "user_profile",
+          "domain": "",
+          "type": "BYTEA",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(178, 27, 0, 0.5)"
+    },
+    {
+      "_id": "Q6PAzpWc53aoivhWK",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "room_info",
+      "name": "room_info",
+      "position": {
+        "x": 840,
+        "y": 360
+      },
+      "keys": {
+        "pks": [
+          {
+            "_id": "EJNcrpfpWnFwKsc7h",
+            "name": "room_id",
+            "pName": "room_id",
+            "domain": "",
+            "type": "INT",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": null,
+            "relFieldId": null,
+            "relType": null
+          }
+        ],
+        "fks": []
+      },
+      "fields": [
+        {
+          "_id": "Rcb7cmFkWAEtFemrX",
+          "name": "creator_id",
+          "pName": "creator_id",
+          "domain": "",
+          "type": "VARCHAR(16)",
+          "defaultValue": "",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": "Pz9orWE7XGmbgjLHz",
+          "relFieldId": "yRGdtJpBCJfSYWgw9",
+          "relType": "ZERO_OR_ONE_OR_MANY"
+        },
+        {
+          "_id": "J3vmtDKiCoHNj32kd",
+          "name": "player_limit",
+          "pName": "player_limit",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "Sbio2AWwi6tRdtxsc",
+          "name": "round_limit",
+          "pName": "round_limit",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "Tu3ckYz8WNhvzekM7",
+          "name": "time_limit",
+          "pName": "time_limit",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "wGtAMu4vkkRF4efEX",
+          "name": "room_pw",
+          "pName": "room_pw",
+          "domain": "",
+          "type": "VARCHAR(255)",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "kw2WbQEh7SqHisqQZ",
+          "name": "can_access",
+          "pName": "can_access",
+          "domain": "",
+          "type": "BOOLEAN",
+          "defaultValue": "true",
+          "isAllowNull": false,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(177, 178, 0, 0.5)"
+    },
+    {
+      "_id": "zg5BRp3z8cjjEFCyN",
+      "_diagramId": "5hddBzt4CQymsJ699",
+      "pName": "player_info",
+      "name": "player_info",
+      "position": {
+        "x": 1280,
+        "y": 580
+      },
+      "keys": {
+        "pks": [],
+        "fks": [
+          {
+            "_id": "bzCa9Cu3fzD2DqXK2",
+            "name": "user_id",
+            "pName": "user_id",
+            "domain": "",
+            "type": "VARCHAR(16)",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": "Pz9orWE7XGmbgjLHz",
+            "relFieldId": "yRGdtJpBCJfSYWgw9",
+            "relType": "ZERO_OR_ONE_OR_MANY"
+          },
+          {
+            "_id": "WZLwadYyKZx3zttQi",
+            "name": "room_id",
+            "pName": "room_id",
+            "domain": "",
+            "type": "INT",
+            "defaultValue": "",
+            "isAllowNull": false,
+            "comment": "",
+            "relEntity": "Q6PAzpWc53aoivhWK",
+            "relFieldId": "EJNcrpfpWnFwKsc7h",
+            "relType": "ZERO_OR_ONE_OR_MANY"
+          }
+        ]
+      },
+      "fields": [
+        {
+          "_id": "WC9cBe2y8P9G4tAR6",
+          "name": "player_role",
+          "pName": "player_role",
+          "domain": "",
+          "type": "roletype_t",
+          "defaultValue": "'NONE'",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "RzGQ6o2GfbdWX5BEh",
+          "name": "player_result",
+          "pName": "player_result",
+          "domain": "",
+          "type": "wintype_t",
+          "defaultValue": "'NONE'",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        },
+        {
+          "_id": "SSq97yEL5fvftwLWB",
+          "name": "player_rank",
+          "pName": "player_rank",
+          "domain": "",
+          "type": "INT",
+          "defaultValue": "",
+          "isAllowNull": true,
+          "comment": "",
+          "relEntity": null,
+          "relFieldId": null,
+          "relType": null
+        }
+      ],
+      "color": "rgba(178, 27, 0, 0.5)"
+    }
+  ],
+  "memoData": [],
+  "domainData": [],
+  "createdAt": "2026-07-10T10:52:34.372Z",
+  "creatorName": "miinspp",
+  "creatorThumb": "https://avatars3.githubusercontent.com/u/266001250"
+}

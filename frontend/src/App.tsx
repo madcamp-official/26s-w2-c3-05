@@ -45,9 +45,91 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
 
 
 // - - - - - - - - - - - - - - - - - - - -
+// 2. 인증 `/auth`
+// - - - - - - - - - - - - - - - - - - - -
+
+// !! WIP !! 
+export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/auth/signup', {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere  
+      user_pw: userPw,
+      user_nickname: userNickname })
+  });
+
+  return user;
+}
+
+// !! WIP !! 
+// return token
+export async function userLogin(userId: string, userPw: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/auth/login', {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere  
+      user_pw: userPw
+    })
+  });
+
+  return user;
+}
+
+// !! WIP !! 
+// return token
+export async function userRefresh(userId: string): Promise<UserInfo> {
+  const user = await request<UserInfo>('/auth/refresh', {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId // get userid from somewhere  
+    })
+  });
+
+  return user;
+}
+
+// !! WIP !! 
+export async function userLogout(userId: string): Promise<number> {
+  const user = await request<UserInfo>('/auth/logout', {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId // get userid from somewhere  
+    })
+  });
+
+  return 204;
+}
+
+// !! WIP !! 
+export async function checkUserID(): Promise<UserInfo> {
+  const user = await request<UserInfo>('/auth/check-id?userId={userId}', {
+    method: "GET",
+    headers: HEADER
+  });
+
+  return user;
+}
+
+// !! WIP !! 
+export async function checkUserNickname(): Promise<UserInfo> {
+  const user = await request<UserInfo>('/auth/check-nickname?nickname={nickname}', {
+    method: "GET",
+    headers: HEADER
+  });
+
+  return user;
+}
+
+
+// - - - - - - - - - - - - - - - - - - - -
 // 3. 유저 `/users`
 // - - - - - - - - - - - - - - - - - - - -
 
+// !! WIP !! 
 export async function getUserInfo(): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me', {
     method: "GET",
@@ -57,6 +139,7 @@ export async function getUserInfo(): Promise<UserInfo> {
   return user;
 }
 
+// !! WIP !! 
 export async function patchUserNickname(nickname: string): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me', {
     method: "PATCH",
@@ -69,6 +152,7 @@ export async function patchUserNickname(nickname: string): Promise<UserInfo> {
   return user;
 }
 
+// !! WIP !! 
 export async function patchUserPassword(password: string): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me/password', {
     method: "PATCH",
@@ -81,6 +165,7 @@ export async function patchUserPassword(password: string): Promise<UserInfo> {
   return user;
 }
 
+// !! WIP !! 
 export async function putUserProfile(profile: string): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me/profile', {
     method: "PUT",
@@ -93,6 +178,7 @@ export async function putUserProfile(profile: string): Promise<UserInfo> {
   return user;
 }
 
+// !! WIP !! 
 export async function deleteUserProfile(profile: string): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me/profile', {
     method: "DELETE",
@@ -105,20 +191,124 @@ export async function deleteUserProfile(profile: string): Promise<UserInfo> {
   return user;
 }
 
-export async function getUserProfile(profile: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/{userId}/profile', {
-    method: "DELETE",
+
+// !! WIP !! 
+// get profile as byte type
+export async function getUserProfile(): Promise<string> {
+  const user = await request<string>('/users/{userId}/profile', {
+    method: "GET",
     headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere   
-      user_profile: profile })
-    });
+  });
 
   return user;
 }
 
+// !! WIP !! 
+// 공개정보 api
+export async function getUser(): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/{userId}', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return user;
+}
 
+// !! WIP !! 
+export async function searchUser(keyword: string, page: number, size: number): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/search?keyword={keyword}&page={page}&size={size}', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return user;
+}
 
+// !! WIP !! 
+export async function deleteUser(): Promise<UserInfo> {
+  const user = await request<UserInfo>('/users/me', {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere   
+    })
+  });
+
+  return user;
+}
+
+// !! WIP !! 
+export async function getMyStat(): Promise<Stat> {
+  const stat = await request<Stat>('/users/me/stat', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return stat;
+}
+
+// !! WIP !! 
+export async function getUserStat(userId: string): Promise<Stat> {
+  const stat = await request<Stat>('/users/{userId}/stat', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return stat;
+}
+
+// !! WIP !! 
+export async function getRankings(page: number, size: number): Promise<Stat[]> {
+  const stat = await request<Stat[]>('/rankings?page={page}&size={size}', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return stat;
+}
+
+// - - - - - - - - - - - - - - - - - - - -
+// 4. 방 로비 `/rooms`
+// - - - - - - - - - - - - - - - - - - - -
+// !! WIP !! 
+export async function getRooms(page: number, size: number, open: boolean): Promise<Room[]> {
+  const rooms = await request<Room[]>('/rooms?page={page}&size={size}&open={open}', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return rooms;
+}
+
+// !! WIP !! 
+export async function createRoom(playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
+  const roomId = await request<number>('/rooms', {
+    method: "POST",
+    headers: HEADER,
+  });
+  
+  return roomId;
+}
+
+// !! WIP !! 
+export async function getRoomDetail(): Promise<Room> {
+  const room = await request<Room>('/rooms/{roomId}', {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return room;
+}
+
+// !! WIP !! 
+export async function patchRoom(): Promise<Room> {
+  const room = await request<Room>('/rooms/{roomId}', {
+    method: "PATCH",
+    headers: HEADER,
+  });
+  
+  return room;
+}
 
 type Stage =
   | { screen: 'login' }

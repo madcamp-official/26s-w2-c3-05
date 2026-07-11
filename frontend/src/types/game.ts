@@ -54,21 +54,21 @@ export interface Stat {
   user_played: number;
 }
 
-// export interface Notification {
-//   notice_num: bigint;
-//   recipient_id: string;
-//   actor_id: string;
-//   type: string; //notificationtype_t
-//   is_read: boolean;
-//   created_at: string; // timestamptz 타입
-// }
+export interface Notification {
+  notice_num: bigint;
+  recipient_id: string;
+  actor_id: string;
+  type: string; //notificationtype_t
+  is_read: boolean;
+  created_at: string; // timestamptz 타입
+}
 
-// export interface UserFriends {
-//   from_id: string;
-//   to_id: string;
-//   friend_date: string; // timestamptz 타입
-//   friend_status: string; //friendtype_t 타입
-// }
+export interface UserFriends {
+  from_id: string;
+  to_id: string;
+  friend_date: string; // timestamptz 타입
+  friend_status: string; //friendtype_t 타입
+}
 
 export interface Topic {
   topic_id: number;

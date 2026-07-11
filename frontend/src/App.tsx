@@ -230,7 +230,7 @@ export async function deleteUser(): Promise<UserInfo> {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere   
+      user_id: userId // get userid from somewhere   
     })
   });
 
@@ -281,10 +281,21 @@ export async function getRooms(page: number, size: number, open: boolean): Promi
 }
 
 // !! WIP !! 
-export async function createRoom(playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
+export async function createRoom(roomName: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
   const roomId = await request<number>('/rooms', {
     method: "POST",
     headers: HEADER,
+    body: JSON.stringify({
+      creator_id: userId, // get userid from somewhere 
+      room_name: roomName,
+      room_host: userNickname, // get user nickname from somewhere
+      player_limit: playerLimit,
+      room_cap: 1,
+      round_limit: roundLimit,
+      time_limit: timeLimit,
+      room_pw: roomPw,
+      can_access: true
+    })
   });
   
   return roomId;
@@ -301,14 +312,117 @@ export async function getRoomDetail(): Promise<Room> {
 }
 
 // !! WIP !! 
-export async function patchRoom(): Promise<Room> {
+export async function patchRoom(playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<Room> {
   const room = await request<Room>('/rooms/{roomId}', {
     method: "PATCH",
     headers: HEADER,
+    body: JSON.stringify({
+      creator_id: userId, // get userid from somewhere 
+      player_limit: playerLimit,
+      round_limit: roundLimit,
+      time_limit: timeLimit,
+      room_pw: roomPw
+    })
   });
   
   return room;
 }
+
+// !! WIP !! 
+export async function deleteRoom(roomId: number): Promise<number> {
+  const roomDeleted = await request<number>('/rooms/{roomId}', {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      creator_id: userId, // get userid from somewhere 
+      room_id: roomId
+    })
+  });
+  
+  return roomDeleted;
+}
+
+// !! WIP !! 
+export async function joinRoom(roomId: number): Promise<PlayerInfo> {
+  const player = await request<PlayerInfo>(`/rooms/${roomId}/join`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId
+    })
+  });
+  
+  return player
+}
+
+// !! WIP !! 
+export async function leaveRoom(roomId: number): Promise<number> {
+  const leftRoom = await request<number>(`/rooms/${roomId}/leave`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId
+    })
+  });
+  
+  return leftRoom
+}
+
+export async function getPlayers(roomId: number): Promise<PlayerInfo[]> {
+  const players = await request<PlayerInfo[]>(`/rooms/${roomId}/players`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return players
+}
+
+// !! WIP !! 
+export async function playerReady(roomId: number): Promise<number> {
+  const response = await request<number>(`/rooms/${roomId}/ready`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId,
+      ready: true
+    })
+  });
+  
+  return response
+}
+
+// !! WIP !! 
+export async function playerKick(roomId: number, targetUserId: string): Promise<number> {
+  const response = await request<number>(`/rooms/${roomId}/kick`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId,
+      target_user_id: targetUserId 
+    })
+  });
+  
+  return response
+}
+
+// !! WIP !! 
+export async function playerStart(roomId: number): Promise<number> {
+  const response = await request<number>(`/rooms/${roomId}/start`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId
+    })
+  });
+  
+  return response
+}
+
 
 type Stage =
   | { screen: 'login' }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Topic } from './types/game';
+import { signup, login } from './api/auth';
 import LoginPage from './pages/LoginPage';
 import LobbyPage from './pages/LobbyPage';
 import WaitingPage from './pages/WaitingPage';
@@ -529,7 +530,15 @@ export default function App() {
     case 'login':
       return (
         <LoginPage
-          onEnter={(name) => {
+          onEnter={async (name) => {
+            // 연동 확인용: 입력한 궁호를 userId로, 임시 비번으로 가입→로그인 왕복
+            try {
+              await signup(name, 'test1234', name).catch(() => {}); // 이미 있으면(409) 무시
+              const { accessToken } = await login(name, 'test1234');
+              console.log('✅ 백엔드 토큰 수신:', accessToken);
+            } catch (e) {
+              console.error('❌ 백엔드 통신 실패:', e);
+            }
             setNick(name);
             setStage({ screen: 'lobby' });
           }}

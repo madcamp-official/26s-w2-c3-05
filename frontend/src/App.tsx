@@ -272,7 +272,7 @@ export async function getRankings(page: number, size: number): Promise<Stat[]> {
 // - - - - - - - - - - - - - - - - - - - -
 // !! WIP !! 
 export async function getRooms(page: number, size: number, open: boolean): Promise<Room[]> {
-  const rooms = await request<Room[]>('/rooms?page={page}&size={size}&open={open}', {
+  const rooms = await request<Room[]>(`/rooms?page=${page}&size=${size}&open=${open}`, {
     method: "GET",
     headers: HEADER,
   });
@@ -423,6 +423,96 @@ export async function playerStart(roomId: number): Promise<number> {
   return response
 }
 
+
+// - - - - - - - - - - - - - - - - - - - -
+// 5. 방 로비 `/rooms/{roomId}/game`
+// - - - - - - - - - - - - - - - - - - - -
+// !! WIP !! 
+export async function getGameSnapshot(roomId: number): Promise<Room> {
+  const room = await request<Room>(`/rooms/${roomId}/game`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return room;
+}
+
+// !! WIP !! 
+// REST 폴백 준비
+export async function giveAward(roomId: number, targetUserId: string): Promise<number> {
+  const room = await request<number>(`/rooms/${roomId}/game/award`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      room_id: roomId
+    })
+  });
+  
+  return room;
+}
+
+// !! WIP !!
+export async function getResult(roomId: number): Promise<PlayerResult> {
+  const result = await request<PlayerResult>(`/rooms/${roomId}/result`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return result
+}
+
+// - - - - - - - - - - - - - - - - - - - -
+// 6. 방 로비 `topics`
+// - - - - - - - - - - - - - - - - - - - -
+
+export async function getRandomTopic(): Promise<Topic> {
+  const topic = await request<Topic>(`/topics/random`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return topic;
+}
+
+export async function getTopicList(): Promise<Topic[]> {
+  const topics = await request<Topic[]>(`/topics`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return topics;
+}
+
+export async function getTopicByID(topicId: number): Promise<Topic> {
+  const topic = await request<Topic>(`/topics/${topicId}`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return topic;
+}
+
+export async function postTopic(): Promise<number> {
+  const topic = await request<Topic>(`/topics`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return topic;
+}
+
+// - - - - - - - - - - - - - - - - - - - -
+// 7. 방 로비 `/rooms/{roomId}/game`
+// - - - - - - - - - - - - - - - - - - - -
+
+// - - - - - - - - - - - - - - - - - - - -
+// 8. 방 로비 `/rooms/{roomId}/game`
+// - - - - - - - - - - - - - - - - - - - -
+
+// - - - - - - - - - - - - - - - - - - - -
+// 9. 방 로비 `/rooms/{roomId}/game`
+// - - - - - - - - - - - - - - - - - - - -
 
 type Stage =
   | { screen: 'login' }

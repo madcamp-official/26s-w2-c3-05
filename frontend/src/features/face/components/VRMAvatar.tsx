@@ -1,12 +1,17 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { VRMLoaderPlugin, VRMUtils, type VRM } from "@pixiv/three-vrm";
 import { applyFaceParams } from "../lib/blendshapeToVrm";   // ← 추가
 import type { FaceParamsRef } from "../types";              // ← 추가
 
-export function VRMAvatar({ faceParamsRef }: { faceParamsRef: FaceParamsRef }) {
-    // ← prop
+export function VRMAvatar({
+  faceParamsRef,
+  style,
+}: {
+  faceParamsRef: FaceParamsRef;
+  style?: CSSProperties; // 크기·배치를 호출부에서 지정 (기본 480×480)
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -93,5 +98,5 @@ export function VRMAvatar({ faceParamsRef }: { faceParamsRef: FaceParamsRef }) {
     };
   }, [faceParamsRef]);
 
-  return <div ref={containerRef} style={{ width: 480, height: 480 }} />;
+  return <div ref={containerRef} style={{ width: 480, height: 480, ...style }} />;
 }

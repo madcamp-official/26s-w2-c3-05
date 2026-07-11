@@ -91,11 +91,10 @@ function RoomCard({ room: r, onJoin }: { room: Room; onJoin: () => void }) {
             flex: 'none',
           }}
         >
-          {r.hanja[0]}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Song Myung', serif", fontSize: 22, color: '#f0e2bf', letterSpacing: 2 }}>
-            {r.name} <span style={{ fontSize: 14, color: 'rgba(238,217,164,.55)' }}>{r.hanja}</span>
+            {r.name} <span style={{ fontSize: 14, color: 'rgba(238,217,164,.55)' }}></span>
           </div>
           <div style={{ marginTop: 3, fontSize: 12.5, color: 'rgba(240,226,191,.6)' }}>전주(殿主) · {r.host}</div>
         </div>

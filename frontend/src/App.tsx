@@ -13,7 +13,7 @@ type Stage =
   | { screen: 'game'; room: Room }
   | { screen: 'result'; room: Room; scores: Scores };
 
-export interface User {
+export interface UserInfo {
   user_id: string;
   user_pw: string;
   registered_at: string; // timestamptz 타입
@@ -21,7 +21,7 @@ export interface User {
   user_profile: string; // buffer 타입
 }
 
-export interface Player {
+export interface PlayerInfo {
   user_id: string;
   room_id: number;
   player_role: string; // roletype_t 타입
@@ -29,7 +29,7 @@ export interface Player {
   player_rank: number;
 }
 
-export interface Room {
+export interface RoomInfo {
   room_id: number;
   creator_id: string;
   player_limit: number;
@@ -57,7 +57,7 @@ export interface Notification {
   created_at: string; // timestamptz 타입
 }
 
-export interface Friends {
+export interface UserFriends {
   from_id: string;
   to_id: string;
   friend_date: string; // timestamptz 타입

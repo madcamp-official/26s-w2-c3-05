@@ -29,6 +29,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // 세션 안 씀
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        // ← 추가: 인증은 STOMP CONNECT에서 함
+                        // 의도: handshake 단계는 열어두되(②에서 토큰 검사하므로 무방비 아님),
+                        // HTTP 레벨 401로 소켓이 아예 못 열리는 걸 방지.
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(new JwtAuthenticationFilter(jwtProvider),

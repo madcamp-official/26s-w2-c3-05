@@ -50,11 +50,11 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
 
 // !! WIP !! 
 export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/auth/signup', {
+  const user = await request<UserInfo>(`/auth/signup`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere  
+      user_id: userId,  
       user_pw: userPw,
       user_nickname: userNickname })
   });
@@ -65,11 +65,11 @@ export async function userSignup(userId: string, userPw: string, userNickname: s
 // !! WIP !! 
 // return token
 export async function userLogin(userId: string, userPw: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/auth/login', {
+  const user = await request<UserInfo>(`/auth/login`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere  
+      user_id: userId,
       user_pw: userPw
     })
   });
@@ -80,11 +80,11 @@ export async function userLogin(userId: string, userPw: string): Promise<UserInf
 // !! WIP !! 
 // return token
 export async function userRefresh(userId: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/auth/refresh', {
+  const user = await request<UserInfo>(`/auth/refresh`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId // get userid from somewhere  
+      user_id: userId  
     })
   });
 
@@ -93,7 +93,7 @@ export async function userRefresh(userId: string): Promise<UserInfo> {
 
 // !! WIP !! 
 export async function userLogout(userId: string): Promise<number> {
-  const user = await request<UserInfo>('/auth/logout', {
+  const user = await request<UserInfo>(`/auth/logout`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -105,8 +105,8 @@ export async function userLogout(userId: string): Promise<number> {
 }
 
 // !! WIP !! 
-export async function checkUserID(): Promise<UserInfo> {
-  const user = await request<UserInfo>('/auth/check-id?userId={userId}', {
+export async function checkUserID(userId: string): Promise<UserInfo> {
+  const user = await request<UserInfo>(`/auth/check-id?userId=${userId}`, {
     method: "GET",
     headers: HEADER
   });
@@ -115,13 +115,13 @@ export async function checkUserID(): Promise<UserInfo> {
 }
 
 // !! WIP !! 
-export async function checkUserNickname(): Promise<UserInfo> {
-  const user = await request<UserInfo>('/auth/check-nickname?nickname={nickname}', {
+export async function checkUserNickname(nickname: string): Promise<boolean> {
+  const response = await request<boolean>(`/auth/check-nickname?nickname=${nickname}`, {
     method: "GET",
     headers: HEADER
   });
 
-  return user;
+  return response;
 }
 
 
@@ -131,106 +131,107 @@ export async function checkUserNickname(): Promise<UserInfo> {
 
 // !! WIP !! 
 export async function getUserInfo(): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me', {
+  const user = await request<UserInfo>(`/users/me`, {
     method: "GET",
     headers: HEADER
   });
 
-  return user;
+  return user
 }
 
 // !! WIP !! 
-export async function patchUserNickname(nickname: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me', {
+export async function patchUserNickname(nickname: string): Promise<boolean> {
+  const response = await request<boolean>(`/users/me`, {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({
       user_nickname: nickname })
     });
 
-  return user;
+  return response
 }
 
 // !! WIP !! 
 export async function patchUserPassword(password: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me/password', {
+  const user = await request<UserInfo>(`/users/me/password`, {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({ 
       user_pw: password })
     });
 
-  return user;
+  return user
 }
 
 // !! WIP !! 
-export async function putUserProfile(profile: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me/profile', {
+export async function putUserProfile(userId: string, profile: string): Promise<boolean> {
+  const response = await request<boolean>(`/users/me/profile`, {
     method: "PUT",
     headers: HEADER,
     body: JSON.stringify({
+      user_id: userId,
       user_profile: profile })
     });
 
-  return user;
+  return response
 }
 
 // !! WIP !! 
-export async function deleteUserProfile(profile: string): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me/profile', {
+export async function deleteUserProfile(userId: string): Promise<boolean> {
+  const response = await request<boolean>(`/users/me/profile`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({  
-      user_profile: profile })
+      user_id: userId })
     });
 
-  return user;
+  return response
 }
 
 
 // !! WIP !! 
 // get profile as byte type
-export async function getUserProfile(): Promise<string> {
-  const user = await request<string>('/users/{userId}/profile', {
+export async function getUserProfile(userId: string): Promise<string> {
+  const profile = await request<string>(`/users/${userId}/profile`, {
     method: "GET",
     headers: HEADER,
   });
 
-  return user;
+  return profile
 }
 
 // !! WIP !! 
 // 공개정보 api
-export async function getUser(): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/{userId}', {
+export async function getUser(userId: string): Promise<UserInfo> {
+  const user = await request<UserInfo>(`/users/${userId}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user;
+  return user
 }
 
 // !! WIP !! 
 export async function searchUser(keyword: string, page: number, size: number): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/search?keyword={keyword}&page={page}&size={size}', {
+  const user = await request<UserInfo>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user;
+  return user
 }
 
 // !! WIP !! 
-export async function deleteUser(): Promise<UserInfo> {
-  const user = await request<UserInfo>('/users/me', {
+export async function deleteUser(userId: string): Promise<boolean> {
+  const user = await request<boolean>(`/users/me`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId // get userid from somewhere   
+      user_id: userId
     })
   });
 
-  return user;
+  return user
 }
 
 // !! WIP !! 
@@ -240,7 +241,7 @@ export async function getMyStat(): Promise<Stat> {
     headers: HEADER,
   });
   
-  return stat;
+  return stat
 }
 
 // !! WIP !! 

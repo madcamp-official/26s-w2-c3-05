@@ -436,16 +436,16 @@ export async function getGameSnapshot(roomId: number): Promise<Room> {
 // !! WIP !! 
 // REST 폴백 준비
 export async function giveAward(roomId: number, targetUserId: string): Promise<number> {
-  const room = await request<number>(`/rooms/${roomId}/game/award`, {
+  const response = await request<number>(`/rooms/${roomId}/game/award`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
+      user_id: targetUserId, // get userid from somewhere 
       room_id: roomId
     })
   });
   
-  return room;
+  return response
 }
 
 // !! WIP !!
@@ -468,7 +468,7 @@ export async function getRandomTopic(): Promise<Topic> {
     headers: HEADER
   });
   
-  return topic;
+  return topic
 }
 
 export async function getTopicList(): Promise<Topic[]> {
@@ -486,7 +486,7 @@ export async function getTopicByID(topicId: number): Promise<Topic> {
     headers: HEADER
   });
   
-  return topic;
+  return topic
 }
 
 // !! WIP !!
@@ -523,7 +523,7 @@ export async function putTopic(topicId: number, topicHead: string): Promise<numb
 
 // !! WIP !!
 // 인증 필요
-export async function postTopic(topicId: number): Promise<number> {
+export async function deleteTopic(topicId: number): Promise<number> {
   const response = await request<number>(`/topics/${topicId}`, {
     method: "DELETE",
     headers: HEADER,
@@ -626,6 +626,27 @@ export async function deleteFriends(userId: string): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 // 8. 알림 `/notifications`
 // - - - - - - - - - - - - - - - - - - - -
+// !! WIP !!
+export async function getNotifications(page: number, size: number): Promise<Notification[]> {
+  const notifications = await request<Notification[]>(`/notifications?page=${page}&size=${size}`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return notifications;
+}
+
+// !! WIP !!
+export async function getNotificationUnreadCount(): Promise<number> {
+  const unread_count = await request<number>(`/notifications/unread-count`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return unread_count;
+}
+
+// !! WIP !! user/queue/notifications
 
 // - - - - - - - - - - - - - - - - - - - -
 // 9. 실시간 게임 (WebSocket / STOMP)

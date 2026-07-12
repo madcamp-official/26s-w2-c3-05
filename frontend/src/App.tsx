@@ -145,7 +145,6 @@ export async function patchUserNickname(nickname: string): Promise<UserInfo> {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere  
       user_nickname: nickname })
     });
 
@@ -158,7 +157,6 @@ export async function patchUserPassword(password: string): Promise<UserInfo> {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({ 
-      user_id: userId, // get userid from somewhere  
       user_pw: password })
     });
 
@@ -171,7 +169,6 @@ export async function putUserProfile(profile: string): Promise<UserInfo> {
     method: "PUT",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
       user_profile: profile })
     });
 
@@ -183,8 +180,7 @@ export async function deleteUserProfile(profile: string): Promise<UserInfo> {
   const user = await request<UserInfo>('/users/me/profile', {
     method: "DELETE",
     headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere   
+    body: JSON.stringify({  
       user_profile: profile })
     });
 
@@ -553,15 +549,79 @@ export async function getFriends(): Promise<UserFriends[]> {
   return friends;
 }
 
-// !! WIP !! 
-export async function getFriendsRequests(): Promise<Notification[]> {
-  const friends = await request<UserFriends[]>(`/friends/requests/received`, {
+export async function getFriendsRequestsToMe(): Promise<Notification[]> {
+  const requests = await request<Notification[]>(`/friends/requests/received`, {
     method: "GET",
     headers: HEADER
   });
   
-  return friends;
+  return requests;
 }
+
+export async function getFriendsRequestsByMe(): Promise<Notification[]> {
+  const requests = await request<Notification[]>(`/friends/requests/sent`, {
+    method: "GET",
+    headers: HEADER
+  });
+  
+  return requests;
+}
+
+// !! WIP !!
+export async function sendFriendsRequests(toUserId: string): Promise<number> {
+  const response = await request<number>(`/friends/requests`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      recipient_id: toUserId
+    })
+  });
+  
+  return response;
+}
+
+// !! WIP !!
+export async function acceptFriendsRequests(fromUserId: string): Promise<number> {
+  const response = await request<number>(`/friends/requests/${fromUserId}/accept`, {
+    method: "POST",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      actor_id: fromUserId
+    })
+  });
+  
+  return response;
+}
+
+// !! WIP !!
+export async function deleteFriendsRequests(fromUserId: string): Promise<number> {
+  const response = await request<number>(`/friends/requests/${fromUserId}`, {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      user_id: userId, // get userid from somewhere 
+      actor_id: fromUserId
+    })
+  });
+  
+  return response;
+}
+
+// !! WIP !!
+export async function deleteFriends(userId: string): Promise<number> {
+  const response = await request<number>(`/friends/${userId}`, {
+    method: "DELETE",
+    headers: HEADER,
+    body: JSON.stringify({
+      to_id: userId // get userid (friend) from somewhere 
+    })
+  });
+  
+  return response;
+}
+
 
 // - - - - - - - - - - - - - - - - - - - -
 // 8. 알림 `/notifications`

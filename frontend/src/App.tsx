@@ -6,12 +6,11 @@ import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
 
-const BASE_URL = 'https://example.com';
-const WS_URL = 'ws://localhost:8080';
+const BASE_URL = 'http://localhost:5173'; // 'https://example.com';
 
 const HEADER = {
   "Content-Type": "application/json",
-  "Authorization": "Bearer {accessToken}"
+  "Authorization": "Bearer ${accessToken}"// `Bearer ${accessToken}`
 };
 
 type GetRequestInit = Omit<RequestInit, 'method' | 'body'> & {
@@ -37,17 +36,17 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
   return response.json() as Promise<T>;
 }
 
-// 개발 전용: ws API 요청 함수
-// WIP => 소켓 요청 및 기능은 gameSocketClient.ts와 useGameSocket.ts로 분리해야 
-export async function requestWebSocket<T>(endpoint: string, options?: StrictRequestInit): Promise<T> {
-  const response = await fetch(`${WS_URL}${endpoint}`, options);
+// // 개발 전용: ws API 요청 함수
+// // WIP => 소켓 요청 및 기능은 gameSocketClient.ts와 useGameSocket.ts로 분리해야 
+// export async function requestWebSocket<T>(endpoint: string, options?: StrictRequestInit): Promise<T> {
+//   const response = await fetch(`${WS_URL}${endpoint}`, options);
 
-  if (!response.ok) {
-    throw new Error(`네트워크 응답 에러: ${response.statusText}`);
-  }
+//   if (!response.ok) {
+//     throw new Error(`네트워크 응답 에러: ${response.statusText}`);
+//   }
 
-  return response.json() as Promise<T>;
-}
+//   return response.json() as Promise<T>;
+// }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 2. 인증 `/auth` - test required
@@ -203,7 +202,10 @@ export async function getUserProfile(userId: string): Promise<string> {
     headers: HEADER,
   });
 
-  return response.data.profile
+  const byteData = response.data.profile
+   // 변환 로직
+
+  return byteData
 }
 
 // test required
@@ -332,7 +334,7 @@ export async function patchRoom(roomId: string, playerLimit: number, roundLimit:
 
 // test required
 export async function deleteRoom(roomId: number): Promise<boolean> {
-  const response = await request<Record<string, any>>('/rooms/{roomId}', {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -641,7 +643,7 @@ export async function deleteFriends(userId: string): Promise<boolean> {
 // - - - - - - - - - - - - - - - - - - - -
 // 8. 알림 `/notifications`
 // - - - - - - - - - - - - - - - - - - - -
-// !! WIP !!
+// test required
 export async function getNotifications(page: number, size: number): Promise<Notification[]> {
   const response = await request<Record<string, any>>(`/notifications?page=${page}&size=${size}`, {
     method: "GET",
@@ -668,14 +670,14 @@ export async function getNotificationUnreadCount(): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 
 // !! WIP !!
-export async function openWebSocket(): Promise<boolean> {
-  const response = await requestWebSocket<Record<string, any>>(`/ws`, {
-    method: "GET",
-    headers: HEADER
-  });
+// export async function openWebSocket(): Promise<boolean> {
+//   const response = await requestWebSocket<Record<string, any>>(`/ws`, {
+//     method: "GET",
+//     headers: HEADER
+//   });
   
-  return response.success
-}
+//   return response.success
+// }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 10. 시스템 · 메타

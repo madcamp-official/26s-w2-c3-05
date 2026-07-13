@@ -430,19 +430,20 @@ export async function playerStart(userId: string, roomId: number): Promise<boole
 // - - - - - - - - - - - - - - - - - - - -
 // 5. 방 로비 `/rooms/{roomId}/game`
 // - - - - - - - - - - - - - - - - - - - -
-// !! WIP !! 
+
+// test required
 export async function getGameSnapshot(roomId: number): Promise<Room> {
-  const room = await request<Record<string, any>>(`/rooms/${roomId}/game`, {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/game`, {
     method: "GET",
     headers: HEADER
   });
   
-  return room;
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 // REST 폴백 준비
-export async function giveAward(roomId: number, targetUserId: string): Promise<number> {
+export async function giveAward(roomId: number, targetUserId: string): Promise<boolean> {
   const response = await request<Record<string, any>>(`/rooms/${roomId}/game/award`, {
     method: "POST",
     headers: HEADER,
@@ -452,53 +453,57 @@ export async function giveAward(roomId: number, targetUserId: string): Promise<n
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !!
-export async function getResult(roomId: number): Promise<PlayerResult> {
-  const result = await request<PlayerResult>(`/rooms/${roomId}/result`, {
+// test required
+// "Scores" 타입으로 Promise해야 하는지 불확실
+export async function getResult(roomId: number): Promise<Scores> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/result`, {
     method: "GET",
     headers: HEADER
   });
   
-  return result
+  return response.data
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 6. 방 로비 `topics`
 // - - - - - - - - - - - - - - - - - - - -
 
+// test required
 export async function getRandomTopic(): Promise<Topic> {
-  const topic = await request<Topic>(`/topics/random`, {
+  const response = await request<Record<string, any>>(`/topics/random`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topic
+  return response.data
 }
 
+// test required
 export async function getTopicList(): Promise<Topic[]> {
-  const topics = await request<Topic[]>(`/topics`, {
+  const response = await request<Record<string, any>>(`/topics`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topics;
+  return response.data
 }
 
+// test required
 export async function getTopicByID(topicId: number): Promise<Topic> {
-  const topic = await request<Topic>(`/topics/${topicId}`, {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topic
+  return response.data
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function postTopic(topicId: number, topicHead: string): Promise<number> {
+export async function postTopic(userId: string, topicId: number, topicHead: string): Promise<boolean> {
   const response = await request<Record<string, any>>(`/topics`, {
     method: "POST",
     headers: HEADER,
@@ -509,12 +514,12 @@ export async function postTopic(topicId: number, topicHead: string): Promise<num
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function putTopic(topicId: number, topicHead: string): Promise<number> {
+export async function putTopic(userId: string, topicId: number, topicHead: string): Promise<boolean> {
   const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "PUT",
     headers: HEADER,
@@ -525,7 +530,7 @@ export async function putTopic(topicId: number, topicHead: string): Promise<numb
     })
   });
   
-  return response
+  return response.success
 }
 
 // test required

@@ -2,6 +2,7 @@ package com.example.demo.room.controller;
 
 import com.example.demo.room.dto.FaceBroadcast;
 import com.example.demo.room.dto.RoomEvent;
+import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
@@ -9,8 +10,11 @@ import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
 
+@RequiredArgsConstructor
 @Controller // @RestController 아님! (HTTP가 아니라 STOMP 메시지 처리)
 public class RoomSocketController {
+
+    private final com.example.demo.room.game.GameManager gameManager;
 
     // 클라가 /app/rooms/3/enter 로 보내면 → /topic/rooms/3 구독자 전원에게 방송
     @MessageMapping("/rooms/{roomId}/enter")
@@ -38,5 +42,17 @@ public class RoomSocketController {
                               FaceBroadcast.FacePayload payload,
                               Principal principal) {
         return new FaceBroadcast(principal.getName(), payload);
+    }
+
+    // 방장이 게임 시작
+    @MessageMapping("/rooms/{roomId}/start")
+    public void start(@DestinationVariable Integer roomId, Principal principal) {
+        gameManager.startGame(roomId, principal.getName());
+    }
+
+    // 공주가 웃었다고 알림
+    @MessageMapping("/rooms/{roomId}/laugh")
+    public void laugh(@DestinationVariable Integer roomId, Principal principal) {
+        gameManager.handleLaugh(roomId, principal.getName());
     }
 }

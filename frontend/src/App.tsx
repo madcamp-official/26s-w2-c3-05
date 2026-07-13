@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import MusicControl from './pages/MusicControl';
 
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
@@ -7,6 +6,7 @@ import LobbyPage from './pages/LobbyPage';
 import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
+import { SoundControl } from './components/SoundControl';
 
 const BASE_URL = 'http://localhost:5173'; // 'https://example.com';
 
@@ -718,50 +718,58 @@ export default function App() {
   const [nick, setNick] = useState('');
   const [stage, setStage] = useState<Stage>({ screen: 'login' });
 
-  switch (stage.screen) {
-    case 'login':
-      return (
-        <LoginPage
-          onEnter={(name) => {
-            setNick(name);
-            setStage({ screen: 'lobby' });
-          }}
-        />
-      );
-    case 'lobby':
-      return (
-        <LobbyPage
-          nick={nick}
-          onRetreat={() => setStage({ screen: 'login' })}
-          onJoin={(room) => setStage({ screen: 'waiting', room })} 
-        />
-      );
-    case 'waiting':
-      return (
-        <WaitingPage
-          nick={nick}
-          room={stage.room}
-          onLeave={() => setStage({ screen: 'lobby' })}
-          onStart={() => setStage({ screen: 'game', room: stage.room })}
-        />
-      );
-    case 'game':
-      return (
-        <GamePage
-          nick={nick}
-          onFinish={(scores) => setStage({ screen: 'result', room: stage.room, scores })}
-        />
-      );
-    case 'result':
-      return (
-        <ResultPage
-          nick={nick}
-          scores={stage.scores}
-          onLobby={() => setStage({ screen: 'lobby' })}
-          onAgain={() => setStage({ screen: 'waiting', room: stage.room })}
-        />
-      );
-  }
+  // 화면 분기만 담당 (switch가 case마다 바로 return하므로 함수로 분리)
+  const renderPage = () => {
+    switch (stage.screen) {
+      case 'login':
+        return (
+          <LoginPage
+            onEnter={(name) => {
+              setNick(name);
+              setStage({ screen: 'lobby' });
+            }}
+          />
+        );
+      case 'lobby':
+        return (
+          <LobbyPage
+            nick={nick}
+            onRetreat={() => setStage({ screen: 'login' })}
+            onJoin={(room) => setStage({ screen: 'waiting', room })}
+          />
+        );
+      case 'waiting':
+        return (
+          <WaitingPage
+            nick={nick}
+            room={stage.room}
+            onLeave={() => setStage({ screen: 'lobby' })}
+            onStart={() => setStage({ screen: 'game', room: stage.room })}
+          />
+        );
+      case 'game':
+        return (
+          <GamePage
+            nick={nick}
+            onFinish={(scores) => setStage({ screen: 'result', room: stage.room, scores })}
+          />
+        );
+      case 'result':
+        return (
+          <ResultPage
+            nick={nick}
+            scores={stage.scores}
+            onLobby={() => setStage({ screen: 'lobby' })}
+            onAgain={() => setStage({ screen: 'waiting', room: stage.room })}
+          />
+        );
+    }
+  };
 
-  <MusicControl />
+  return (
+    <>
+      <SoundControl />
+      {renderPage()}
+    </>
+  );
 }

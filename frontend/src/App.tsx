@@ -272,25 +272,25 @@ export async function getRankings(page: number, size: number): Promise<Stat[]> {
 // - - - - - - - - - - - - - - - - - - - -
 // 4. 방 로비 `/rooms`
 // - - - - - - - - - - - - - - - - - - - -
-// !! WIP !! 
+// test required 
 export async function getRooms(page: number, size: number, open: boolean): Promise<Room[]> {
-  const rooms = await request<Room[]>(`/rooms?page=${page}&size=${size}&open=${open}`, {
+  const response = await request<Record<string, any>>(`/rooms?page=${page}&size=${size}&open=${open}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return rooms;
+  return response.data
 }
 
-// !! WIP !! 
-export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<string> {
-  const response = await request<string>('/rooms', {
+// test required
+export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
+  const response = await request<Record<string, any>>(`/rooms`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      creator_id: userId,  
       room_name: roomName,
-      room_host: userNickname, // get user nickname from somewhere
+      room_host: userNickname, 
       room_count: 1,
       player_limit: playerLimit,
       round_limit: roundLimit,
@@ -300,27 +300,26 @@ export async function createRoom(userId: string, roomName: string, userNickname:
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function getRoomDetail(): Promise<Room> {
-  const response = await request<Room>('/rooms/{roomId}', {
+// test required
+export async function getRoomDetail(roomId: string): Promise<Room> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  room = response. 
-  return room
+  return response.data
 }
 
-// !! WIP !! 
-export async function patchRoom(playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<Room> {
-  const room = await request<Room>('/rooms/{roomId}', {
+// test required
+export async function patchRoom(roomId: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}`, {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      // creator_id: userId,  
       player_limit: playerLimit,
       round_limit: roundLimit,
       time_limit: timeLimit,
@@ -328,26 +327,26 @@ export async function patchRoom(playerLimit: number, roundLimit: number, timeLim
     })
   });
   
-  return room;
+  return response.success
 }
 
-// !! WIP !! 
-export async function deleteRoom(roomId: number): Promise<number> {
-  const roomDeleted = await request<number>('/rooms/{roomId}', {
+// test required
+export async function deleteRoom(roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>('/rooms/{roomId}', {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      // creator_id: userId, 
       room_id: roomId
     })
   });
   
-  return roomDeleted;
+  return response.success
 }
 
-// !! WIP !! 
-export async function joinRoom(roomId: number): Promise<PlayerInfo> {
-  const player = await request<PlayerInfo>(`/rooms/${roomId}/join`, {
+// test required
+export async function joinRoom(userId: string, roomId: number): Promise<PlayerInfo> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/join`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -356,12 +355,12 @@ export async function joinRoom(roomId: number): Promise<PlayerInfo> {
     })
   });
   
-  return player
+  return response.data
 }
 
-// !! WIP !! 
-export async function leaveRoom(roomId: number): Promise<number> {
-  const leftRoom = await request<number>(`/rooms/${roomId}/leave`, {
+// test required
+export async function leaveRoom(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/leave`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -370,21 +369,22 @@ export async function leaveRoom(roomId: number): Promise<number> {
     })
   });
   
-  return leftRoom
+  return response.data
 }
 
+// test required
 export async function getPlayers(roomId: number): Promise<PlayerInfo[]> {
-  const players = await request<PlayerInfo[]>(`/rooms/${roomId}/players`, {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/players`, {
     method: "GET",
     headers: HEADER
   });
   
-  return players
+  return response.data
 }
 
-// !! WIP !! 
-export async function playerReady(roomId: number): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/ready`, {
+// test required
+export async function playerReady(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/ready`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -394,12 +394,12 @@ export async function playerReady(roomId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function playerKick(roomId: number, targetUserId: string): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/kick`, {
+// test required
+export async function playerKick(userId: string, roomId: number, targetUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/kick`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -409,12 +409,12 @@ export async function playerKick(roomId: number, targetUserId: string): Promise<
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function playerStart(roomId: number): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/start`, {
+//  test required
+export async function playerStart(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/start`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -423,7 +423,7 @@ export async function playerStart(roomId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
 

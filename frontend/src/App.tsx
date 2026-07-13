@@ -53,9 +53,9 @@ export async function requestWebSocket<T>(endpoint: string, options?: StrictRequ
 // 2. 인증 `/auth`
 // - - - - - - - - - - - - - - - - - - - -
 
-// !! WIP !! 
-export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<UserInfo> {
-  const user = await request<UserInfo>(`/auth/signup`, {
+// test required
+export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<string> {
+  const response = await request<string>(`/auth/signup`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -64,13 +64,13 @@ export async function userSignup(userId: string, userPw: string, userNickname: s
       user_nickname: userNickname })
   });
 
-  return user;
+  return response;
 }
 
-// !! WIP !! 
+// test required 
 // return token
-export async function userLogin(userId: string, userPw: string): Promise<UserInfo> {
-  const user = await request<UserInfo>(`/auth/login`, {
+export async function userLogin(userId: string, userPw: string): Promise<string> {
+  const response = await request<string>(`/auth/login`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -79,26 +79,27 @@ export async function userLogin(userId: string, userPw: string): Promise<UserInf
     })
   });
 
-  return user;
+  return response
 }
 
-// !! WIP !! 
+// test required
 // return token
-export async function userRefresh(userId: string): Promise<UserInfo> {
-  const user = await request<UserInfo>(`/auth/refresh`, {
+export async function userRefresh(userId: string): Promise<Record<string, any>> {
+  const response = await request<Record<string, any>>(`/auth/refresh`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      user_id: userId  
+      user_id: userId,
+      refreshToken: true
     })
   });
 
-  return user;
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function userLogout(userId: string): Promise<number> {
-  const user = await request<UserInfo>(`/auth/logout`, {
+  const response = await request<number>(`/auth/logout`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -106,7 +107,7 @@ export async function userLogout(userId: string): Promise<number> {
     })
   });
 
-  return 204;
+  return response
 }
 
 // !! WIP !! 
@@ -283,16 +284,16 @@ export async function getRooms(page: number, size: number, open: boolean): Promi
 }
 
 // !! WIP !! 
-export async function createRoom(roomName: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
-  const roomId = await request<number>('/rooms', {
+export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<string> {
+  const response = await request<string>('/rooms', {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
       creator_id: userId, // get userid from somewhere 
       room_name: roomName,
       room_host: userNickname, // get user nickname from somewhere
+      room_count: 1,
       player_limit: playerLimit,
-      room_cap: 1,
       round_limit: roundLimit,
       time_limit: timeLimit,
       room_pw: roomPw,
@@ -300,17 +301,18 @@ export async function createRoom(roomName: string, playerLimit: number, roundLim
     })
   });
   
-  return roomId;
+  return response
 }
 
 // !! WIP !! 
 export async function getRoomDetail(): Promise<Room> {
-  const room = await request<Room>('/rooms/{roomId}', {
+  const response = await request<Room>('/rooms/{roomId}', {
     method: "GET",
     headers: HEADER,
   });
   
-  return room;
+  room = response. 
+  return room
 }
 
 // !! WIP !! 

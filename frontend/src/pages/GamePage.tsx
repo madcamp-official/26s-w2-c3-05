@@ -65,6 +65,18 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
   // TODO(멀티플레이): 서버 중계로 다른 유저의 엎드리기도 각자의 motionRef에 매핑한다.
   const myBowRef = useRef<AvatarMotion>({ action: null });
 
+  // 절할 때 뜨는 대사 말풍선 노출 상태 (내 신하 기준)
+  const [bowSpeaking, setBowSpeaking] = useState(false);
+  const bowSpeechTimer = useRef<number | undefined>(undefined);
+  // 엎드리기: 아바타 모션 + '소인 죽을죄를…' 말풍선을 함께 띄운다
+  const triggerBow = () => {
+    myBowRef.current.action = 'bow';
+    setBowSpeaking(true);
+    window.clearTimeout(bowSpeechTimer.current);
+    bowSpeechTimer.current = window.setTimeout(() => setBowSpeaking(false), 2000);
+  };
+  useEffect(() => () => window.clearTimeout(bowSpeechTimer.current), []);
+
   // 공주로 간택된 플레이어의 얼굴 소스를 반환한다.
   // 현재는 로컬 사용자(nick)만 웹캠 소스를 가지므로, 내가 공주일 때만 라이브 아바타가 뜬다.
   // TODO(멀티플레이): 하인 역할의 실제 유저들이 참여하면, 원격 유저별 FaceParamsRef를
@@ -492,6 +504,53 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   gap: 6,
                 }}
               >
+                {/* 절할 때 뜨는 대사 말풍선 (현재는 내 신하만 절 가능 → p.isMe)
+                    TODO(멀티플레이): 원격 신하 절 이벤트도 각자 말풍선으로 표시 */}
+                {p.isMe && bowSpeaking && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      marginBottom: 10,
+                      zIndex: 6,
+                      animation: 'fadeIn .2s ease both',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        maxWidth: 132,
+                        textAlign: 'center',
+                        lineHeight: 1.35,
+                        background: 'rgba(18,8,6,.92)',
+                        border: `1px solid ${GOLD(0.6)}`,
+                        borderRadius: 10,
+                        padding: '7px 13px',
+                        color: '#f0e2bf',
+                        fontSize: 12.5,
+                        letterSpacing: 0.5,
+                        boxShadow: `inset 0 0 0 2px rgba(18,8,6,.5), inset 0 0 0 3px ${GOLD(0.18)}, 0 8px 20px rgba(0,0,0,.55)`,
+                      }}
+                    >
+                      소인 죽을죄를 지었사옵니다
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 0,
+                          height: 0,
+                          borderLeft: '6px solid transparent',
+                          borderRight: '6px solid transparent',
+                          borderTop: `7px solid ${GOLD(0.6)}`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div
                   style={{
                     display: 'flex',
@@ -535,7 +594,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   {p.isMe && !iAmPrincess && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
-                      <BowButton onClick={() => { myBowRef.current.action = 'bow'; }} />
+                      <BowButton onClick={triggerBow} />
                     </div>
                   )}
                 </div>

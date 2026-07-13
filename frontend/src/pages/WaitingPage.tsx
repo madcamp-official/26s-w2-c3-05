@@ -67,7 +67,7 @@ export default function WaitingPage({
           <Seal char="候" size={46} />
           <div>
             <div style={{ fontFamily: "'Song Myung', serif", fontSize: 32, color: '#eed9a4', letterSpacing: 4 }}>
-              {room.name} <span style={{ fontSize: 18, color: 'rgba(238,217,164,.6)' }}>({room.hanja})</span>
+              {room.room_name} <span style={{ fontSize: 18, color: 'rgba(238,217,164,.6)' }}></span>
             </div>
             <div style={{ marginTop: 2, color: 'rgba(240,226,191,.72)', fontSize: 14 }}>
               {readyCount >= slots.length

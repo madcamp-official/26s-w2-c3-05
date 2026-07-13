@@ -12,7 +12,7 @@ export default function LoginPage({ onEnter }: { onEnter: (nick: string) => void
 
   const { setMusicSrc } = useAudio();
   useEffect(() => {
-    setMusicSrc('../../public/assets/bgm/bgm_lobby.mp3');
+    setMusicSrc('../../assets/bgm/bgm_lobby.mp3');
   }, [setMusicSrc]);
 
   return (

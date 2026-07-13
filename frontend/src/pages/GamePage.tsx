@@ -1011,7 +1011,7 @@ function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: strin
       }}
     >
       <VRMAvatar
-        modelSrc="/gnome.vrm"
+        modelSrc="/servants.vrm"
         frame="full"
         motionRef={motionRef}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}

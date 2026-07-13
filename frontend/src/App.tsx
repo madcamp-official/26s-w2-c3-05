@@ -137,12 +137,12 @@ export async function checkUserNickname(nickname: string): Promise<boolean> {
 
 // test required
 export async function getUserInfo(): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/me`, {
+  const response = await request<Record<string, any>>(`/users/me`, {
     method: "GET",
     headers: HEADER
   });
 
-  return user
+  return response.data
 }
 
 // test required
@@ -154,7 +154,7 @@ export async function patchUserNickname(nickname: string): Promise<boolean> {
       user_nickname: nickname })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -166,7 +166,7 @@ export async function patchUserPassword(password: string): Promise<UserInfo> {
       user_pw: password })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -179,7 +179,7 @@ export async function putUserProfile(userId: string, profile: string): Promise<b
       user_profile: profile })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -191,45 +191,44 @@ export async function deleteUserProfile(userId: string): Promise<boolean> {
       user_id: userId })
     });
 
-  return response
+  return response.success
 }
 
 
 // !! WIP !! 
 // get profile as byte type
 export async function getUserProfile(userId: string): Promise<string> {
-  const profile = await request<string>(`/users/${userId}/profile`, {
+  const response = await request<Record<string, any>>(`/users/${userId}/profile`, {
     method: "GET",
     headers: HEADER,
   });
 
-  return profile
+  return response.data.profile
 }
 
-// !! WIP !! 
-// 공개정보 api
+// test required
 export async function getUser(userId: string): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/${userId}`, {
+  const response = await request<Record<string, any>>(`/users/${userId}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function searchUser(keyword: string, page: number, size: number): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
+  const response = await request<Record<string, any>>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function deleteUser(userId: string): Promise<boolean> {
-  const user = await request<Record<string, any>>(`/users/me`, {
+  const response = await request<Record<string, any>>(`/users/me`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -237,37 +236,37 @@ export async function deleteUser(userId: string): Promise<boolean> {
     })
   });
 
-  return user
+  return response.success
 }
 
-// !! WIP !! 
+// test required 
 export async function getMyStat(): Promise<Stat> {
-  const stat = await request<Stat>('/users/me/stat', {
+  const response = await request<Record<string, any>>(`/users/me/stat`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function getUserStat(userId: string): Promise<Stat> {
-  const stat = await request<Stat>('/users/{userId}/stat', {
+  const response = await request<Record<string, any>>(`/users/${userId}/stat`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat;
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function getRankings(page: number, size: number): Promise<Stat[]> {
-  const stat = await request<Stat[]>('/rankings?page={page}&size={size}', {
+  const response = await request<Record<string, any>>(`/rankings?page=${page}&size=${size}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat;
+  return response.data
 }
 
 // - - - - - - - - - - - - - - - - - - - -

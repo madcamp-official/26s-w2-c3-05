@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { panel, primaryBtn, Divider, Seal, Backdrop, GOLD } from '../components/ui';
+
+import { useAudio } from '../components/AudioContext';
 
 export default function LoginPage({ onEnter }: { onEnter: (nick: string) => void }) {
   const [nick, setNick] = useState('');
@@ -7,6 +9,12 @@ export default function LoginPage({ onEnter }: { onEnter: (nick: string) => void
   const submit = () => {
     if (can) onEnter(nick.trim());
   };
+
+  const { setMusicSrc } = useAudio();
+  useEffect(() => {
+    // 홈 페이지에 오면 쾌활한 음악으로 변경
+    setMusicSrc('/music/lobby_theme.mp3');
+  }, [setMusicSrc]);
 
   return (
     <Backdrop

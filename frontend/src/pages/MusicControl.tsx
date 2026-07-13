@@ -11,9 +11,9 @@ export default function MusicControl() {
   return (
     <div style={{
       position: 'fixed',
-      bottom: '20px',
-      right: '20px',
-      zIndex: 1000,
+      bottom: '40px',
+      right: '40px',
+      zIndex: 9999,
       display: 'flex',
       alignItems: 'center',
       gap: '10px',

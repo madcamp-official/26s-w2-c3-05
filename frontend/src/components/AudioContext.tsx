@@ -13,7 +13,6 @@ const AudioContext = createContext<AudioContextType | undefined>(undefined);
 
 export function AudioProvider({ children }: { children: React.ReactNode }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  // 🌟 NodeJS.Timeout 대신 브라우저의 타이머 ID 타입(number)으로 변경
   const fadeIntervalRef = useRef<number | null>(null); 
 
   const [isPlaying, setIsPlaying] = useState<boolean>(false);

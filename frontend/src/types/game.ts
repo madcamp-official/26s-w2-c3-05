@@ -1,4 +1,9 @@
 export type Screen = 'login' | 'lobby' | 'waiting' | 'game' | 'result';
+export type RankType = 'NONE' | 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'DIAMOND';
+export type RoleType = 'PRINCESS' | 'SERVANT' | 'NONE';
+export type WinType = 'WIN' | 'OTHER' | 'LOSE' | 'NONE';
+export type FriendType = 'NONE' | 'REQUESTED' | 'FRIENDS';
+export type NotificationType = 'FRIEND_REQUEST' | 'FRIEND_ACCEPT' | 'SYSTEM';
 
 export interface Room {
   room_id: number;

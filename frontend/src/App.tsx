@@ -137,12 +137,12 @@ export async function checkUserNickname(nickname: string): Promise<boolean> {
 
 // test required
 export async function getUserInfo(): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/me`, {
+  const response = await request<Record<string, any>>(`/users/me`, {
     method: "GET",
     headers: HEADER
   });
 
-  return user
+  return response.data
 }
 
 // test required
@@ -154,7 +154,7 @@ export async function patchUserNickname(nickname: string): Promise<boolean> {
       user_nickname: nickname })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -166,7 +166,7 @@ export async function patchUserPassword(password: string): Promise<UserInfo> {
       user_pw: password })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -179,7 +179,7 @@ export async function putUserProfile(userId: string, profile: string): Promise<b
       user_profile: profile })
     });
 
-  return response
+  return response.success
 }
 
 // test required
@@ -191,45 +191,44 @@ export async function deleteUserProfile(userId: string): Promise<boolean> {
       user_id: userId })
     });
 
-  return response
+  return response.success
 }
 
 
 // !! WIP !! 
 // get profile as byte type
 export async function getUserProfile(userId: string): Promise<string> {
-  const profile = await request<string>(`/users/${userId}/profile`, {
+  const response = await request<Record<string, any>>(`/users/${userId}/profile`, {
     method: "GET",
     headers: HEADER,
   });
 
-  return profile
+  return response.data.profile
 }
 
-// !! WIP !! 
-// 공개정보 api
+// test required
 export async function getUser(userId: string): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/${userId}`, {
+  const response = await request<Record<string, any>>(`/users/${userId}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function searchUser(keyword: string, page: number, size: number): Promise<UserInfo> {
-  const user = await request<Record<string, any>>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
+  const response = await request<Record<string, any>>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return user
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function deleteUser(userId: string): Promise<boolean> {
-  const user = await request<Record<string, any>>(`/users/me`, {
+  const response = await request<Record<string, any>>(`/users/me`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -237,61 +236,61 @@ export async function deleteUser(userId: string): Promise<boolean> {
     })
   });
 
-  return user
+  return response.success
 }
 
-// !! WIP !! 
+// test required 
 export async function getMyStat(): Promise<Stat> {
-  const stat = await request<Stat>('/users/me/stat', {
+  const response = await request<Record<string, any>>(`/users/me/stat`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function getUserStat(userId: string): Promise<Stat> {
-  const stat = await request<Stat>('/users/{userId}/stat', {
+  const response = await request<Record<string, any>>(`/users/${userId}/stat`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat;
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 export async function getRankings(page: number, size: number): Promise<Stat[]> {
-  const stat = await request<Stat[]>('/rankings?page={page}&size={size}', {
+  const response = await request<Record<string, any>>(`/rankings?page=${page}&size=${size}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return stat;
+  return response.data
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 4. 방 로비 `/rooms`
 // - - - - - - - - - - - - - - - - - - - -
-// !! WIP !! 
+// test required 
 export async function getRooms(page: number, size: number, open: boolean): Promise<Room[]> {
-  const rooms = await request<Room[]>(`/rooms?page=${page}&size=${size}&open=${open}`, {
+  const response = await request<Record<string, any>>(`/rooms?page=${page}&size=${size}&open=${open}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  return rooms;
+  return response.data
 }
 
-// !! WIP !! 
-export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<string> {
-  const response = await request<string>('/rooms', {
+// test required
+export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
+  const response = await request<Record<string, any>>(`/rooms`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      creator_id: userId,  
       room_name: roomName,
-      room_host: userNickname, // get user nickname from somewhere
+      room_host: userNickname, 
       room_count: 1,
       player_limit: playerLimit,
       round_limit: roundLimit,
@@ -301,27 +300,26 @@ export async function createRoom(userId: string, roomName: string, userNickname:
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function getRoomDetail(): Promise<Room> {
-  const response = await request<Room>('/rooms/{roomId}', {
+// test required
+export async function getRoomDetail(roomId: string): Promise<Room> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}`, {
     method: "GET",
     headers: HEADER,
   });
   
-  room = response. 
-  return room
+  return response.data
 }
 
-// !! WIP !! 
-export async function patchRoom(playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<Room> {
-  const room = await request<Room>('/rooms/{roomId}', {
+// test required
+export async function patchRoom(roomId: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}`, {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      // creator_id: userId,  
       player_limit: playerLimit,
       round_limit: roundLimit,
       time_limit: timeLimit,
@@ -329,26 +327,26 @@ export async function patchRoom(playerLimit: number, roundLimit: number, timeLim
     })
   });
   
-  return room;
+  return response.success
 }
 
-// !! WIP !! 
-export async function deleteRoom(roomId: number): Promise<number> {
-  const roomDeleted = await request<number>('/rooms/{roomId}', {
+// test required
+export async function deleteRoom(roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>('/rooms/{roomId}', {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
-      creator_id: userId, // get userid from somewhere 
+      // creator_id: userId, 
       room_id: roomId
     })
   });
   
-  return roomDeleted;
+  return response.success
 }
 
-// !! WIP !! 
-export async function joinRoom(roomId: number): Promise<PlayerInfo> {
-  const player = await request<PlayerInfo>(`/rooms/${roomId}/join`, {
+// test required
+export async function joinRoom(userId: string, roomId: number): Promise<PlayerInfo> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/join`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -357,12 +355,12 @@ export async function joinRoom(roomId: number): Promise<PlayerInfo> {
     })
   });
   
-  return player
+  return response.data
 }
 
-// !! WIP !! 
-export async function leaveRoom(roomId: number): Promise<number> {
-  const leftRoom = await request<number>(`/rooms/${roomId}/leave`, {
+// test required
+export async function leaveRoom(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/leave`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -371,21 +369,22 @@ export async function leaveRoom(roomId: number): Promise<number> {
     })
   });
   
-  return leftRoom
+  return response.data
 }
 
+// test required
 export async function getPlayers(roomId: number): Promise<PlayerInfo[]> {
-  const players = await request<PlayerInfo[]>(`/rooms/${roomId}/players`, {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/players`, {
     method: "GET",
     headers: HEADER
   });
   
-  return players
+  return response.data
 }
 
-// !! WIP !! 
-export async function playerReady(roomId: number): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/ready`, {
+// test required
+export async function playerReady(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/ready`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -395,12 +394,12 @@ export async function playerReady(roomId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function playerKick(roomId: number, targetUserId: string): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/kick`, {
+// test required
+export async function playerKick(userId: string, roomId: number, targetUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/kick`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -410,12 +409,12 @@ export async function playerKick(roomId: number, targetUserId: string): Promise<
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !! 
-export async function playerStart(roomId: number): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/start`, {
+//  test required
+export async function playerStart(userId: string, roomId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/start`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -424,27 +423,28 @@ export async function playerStart(roomId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
 
 // - - - - - - - - - - - - - - - - - - - -
 // 5. 방 로비 `/rooms/{roomId}/game`
 // - - - - - - - - - - - - - - - - - - - -
-// !! WIP !! 
+
+// test required
 export async function getGameSnapshot(roomId: number): Promise<Room> {
-  const room = await request<Room>(`/rooms/${roomId}/game`, {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/game`, {
     method: "GET",
     headers: HEADER
   });
   
-  return room;
+  return response.data
 }
 
-// !! WIP !! 
+// test required
 // REST 폴백 준비
-export async function giveAward(roomId: number, targetUserId: string): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/game/award`, {
+export async function giveAward(roomId: number, targetUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/game/award`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -453,54 +453,58 @@ export async function giveAward(roomId: number, targetUserId: string): Promise<n
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !!
-export async function getResult(roomId: number): Promise<PlayerResult> {
-  const result = await request<PlayerResult>(`/rooms/${roomId}/result`, {
+// test required
+// "Scores" 타입으로 Promise해야 하는지 불확실
+export async function getResult(roomId: number): Promise<Scores> {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/result`, {
     method: "GET",
     headers: HEADER
   });
   
-  return result
+  return response.data
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 6. 방 로비 `topics`
 // - - - - - - - - - - - - - - - - - - - -
 
+// test required
 export async function getRandomTopic(): Promise<Topic> {
-  const topic = await request<Topic>(`/topics/random`, {
+  const response = await request<Record<string, any>>(`/topics/random`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topic
+  return response.data
 }
 
+// test required
 export async function getTopicList(): Promise<Topic[]> {
-  const topics = await request<Topic[]>(`/topics`, {
+  const response = await request<Record<string, any>>(`/topics`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topics;
+  return response.data
 }
 
+// test required
 export async function getTopicByID(topicId: number): Promise<Topic> {
-  const topic = await request<Topic>(`/topics/${topicId}`, {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "GET",
     headers: HEADER
   });
   
-  return topic
+  return response.data
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function postTopic(topicId: number, topicHead: string): Promise<number> {
-  const response = await request<number>(`/topics`, {
+export async function postTopic(userId: string, topicId: number, topicHead: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/topics`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -510,13 +514,13 @@ export async function postTopic(topicId: number, topicHead: string): Promise<num
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function putTopic(topicId: number, topicHead: string): Promise<number> {
-  const response = await request<number>(`/topics/${topicId}`, {
+export async function putTopic(userId: string, topicId: number, topicHead: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "PUT",
     headers: HEADER,
     body: JSON.stringify({
@@ -526,13 +530,13 @@ export async function putTopic(topicId: number, topicHead: string): Promise<numb
     })
   });
   
-  return response
+  return response.success
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function deleteTopic(topicId: number): Promise<number> {
-  const response = await request<number>(`/topics/${topicId}`, {
+export async function deleteTopic(userId: string, topicId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -541,43 +545,46 @@ export async function deleteTopic(topicId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 7. 친구 `/friends`
 // - - - - - - - - - - - - - - - - - - - -
 
+// test required
 export async function getFriends(): Promise<UserFriends[]> {
-  const friends = await request<UserFriends[]>(`/friends`, {
+  const response = await request<Record<string, any>>(`/friends`, {
     method: "GET",
     headers: HEADER
   });
   
-  return friends;
+  return response.data
 }
 
+// test required
 export async function getFriendsRequestsToMe(): Promise<Notification[]> {
-  const requests = await request<Notification[]>(`/friends/requests/received`, {
+  const response = await request<Record<string, any>>(`/friends/requests/received`, {
     method: "GET",
     headers: HEADER
   });
   
-  return requests;
+  return response.data
 }
 
+// test required
 export async function getFriendsRequestsByMe(): Promise<Notification[]> {
-  const requests = await request<Notification[]>(`/friends/requests/sent`, {
+  const response = await request<Record<string, any>>(`/friends/requests/sent`, {
     method: "GET",
     headers: HEADER
   });
   
-  return requests;
+  return response.data
 }
 
-// !! WIP !!
-export async function sendFriendsRequests(toUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests`, {
+// test required
+export async function sendFriendsRequests(userId: string, toUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -586,12 +593,12 @@ export async function sendFriendsRequests(toUserId: string): Promise<number> {
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function acceptFriendsRequests(fromUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests/${fromUserId}/accept`, {
+// test required
+export async function acceptFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}/accept`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -600,12 +607,12 @@ export async function acceptFriendsRequests(fromUserId: string): Promise<number>
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function deleteFriendsRequests(fromUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests/${fromUserId}`, {
+// test required
+export async function deleteFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -614,12 +621,12 @@ export async function deleteFriendsRequests(fromUserId: string): Promise<number>
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function deleteFriends(userId: string): Promise<number> {
-  const response = await request<number>(`/friends/${userId}`, {
+// test required
+export async function deleteFriends(userId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/${userId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -627,7 +634,7 @@ export async function deleteFriends(userId: string): Promise<number> {
     })
   });
   
-  return response;
+  return response.success
 }
 
 
@@ -636,22 +643,22 @@ export async function deleteFriends(userId: string): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 // !! WIP !!
 export async function getNotifications(page: number, size: number): Promise<Notification[]> {
-  const notifications = await request<Notification[]>(`/notifications?page=${page}&size=${size}`, {
+  const response = await request<Record<string, any>>(`/notifications?page=${page}&size=${size}`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return notifications;
+  return response.data
 }
 
-// !! WIP !!
+// test required
 export async function getNotificationUnreadCount(): Promise<number> {
-  const unread_count = await request<number>(`/notifications/unread-count`, {
+  const response = await request<Record<string, any>>(`/notifications/unread-count`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return unread_count;
+  return response.data
 }
 
 // !! WIP !! user/queue/notifications
@@ -661,13 +668,13 @@ export async function getNotificationUnreadCount(): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 
 // !! WIP !!
-export async function openWebSocket(): Promise<number> {
-  const response = await requestWebSocket<number>(`/ws`, {
+export async function openWebSocket(): Promise<boolean> {
+  const response = await requestWebSocket<Record<string, any>>(`/ws`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return response
+  return response.success
 }
 
 // - - - - - - - - - - - - - - - - - - - -
@@ -676,22 +683,22 @@ export async function openWebSocket(): Promise<number> {
 
 // test required
 export async function getHealth(): Promise<number> {
-  const health = await request<number>(`/health`, {
+  const response = await request<Record<string, any>>(`/health`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return health
+  return response.data
 }
 
 // test required
 export async function getVersion(): Promise<string> {
-  const version = await request<string>(`/version`, {
+  const response = await request<Record<string, any>>(`/version`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return version
+  return response.data
 }
 
 

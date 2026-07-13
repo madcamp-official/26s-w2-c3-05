@@ -534,7 +534,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                         boxShadow: `inset 0 0 0 2px rgba(18,8,6,.5), inset 0 0 0 3px ${GOLD(0.18)}, 0 8px 20px rgba(0,0,0,.55)`,
                       }}
                     >
-                      소인 죽을죄를 지었사옵니다
+                      소인 죽여주시옵소서...!!!
                       <div
                         style={{
                           position: 'absolute',

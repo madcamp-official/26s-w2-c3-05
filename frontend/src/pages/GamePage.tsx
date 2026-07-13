@@ -876,7 +876,8 @@ function Dais({
   );
 }
 
-/** 신하 실루엣 (관모 + 도포) */
+/** 신하 아바타 — gnome.vrm 전신 렌더 (기존 CSS 실루엣 대체, sway·glow 연출 유지)
+ *  TODO(멀티플레이): 유저별 커스텀 VRM을 쓰게 되면 modelSrc를 플레이어 정보에서 받아온다. */
 function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
   return (
     <div
@@ -885,68 +886,16 @@ function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
         width: 96,
         height: 148,
         animation: `sway 5.2s ease-in-out ${delay} infinite`,
-        filter: glow ? 'drop-shadow(0 0 12px rgba(240,205,120,.45))' : 'none',
+        filter: glow
+          ? 'drop-shadow(0 0 12px rgba(240,205,120,.45))'
+          : 'drop-shadow(0 8px 14px rgba(0,0,0,.45))',
       }}
     >
-      <div style={{ position: 'absolute', top: 15, left: -4, width: 28, height: 10, borderRadius: '50%', background: '#1c0d08' }} />
-      <div style={{ position: 'absolute', top: 15, right: -4, width: 28, height: 10, borderRadius: '50%', background: '#1c0d08' }} />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 28,
-          width: 40,
-          height: 24,
-          borderRadius: '50% 50% 42% 42%',
-          background: 'linear-gradient(180deg, #301810, #1c0d08)',
-        }}
+      <VRMAvatar
+        modelSrc="/gnome.vrm"
+        frame="full"
+        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 14,
-          left: 31,
-          width: 34,
-          height: 30,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at 36% 34%, #3c2214, #221008 70%)',
-          boxShadow: 'inset -4px -3px 7px rgba(0,0,0,.5), 2px 1px 5px rgba(240,205,120,.14)',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: 40,
-          left: 0,
-          width: 96,
-          height: 108,
-          clipPath: 'polygon(50% 0%, 63% 5%, 79% 24%, 93% 76%, 100% 100%, 0% 100%, 7% 76%, 21% 24%, 37% 5%)',
-          background: 'linear-gradient(180deg, #381a0e, #1e0d07 72%)',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 9,
-            height: 94,
-            background: 'linear-gradient(180deg, rgba(216,180,106,.4), rgba(216,180,106,.08))',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: 58,
-            left: '20%',
-            width: '60%',
-            height: 6,
-            borderRadius: 3,
-            background: 'rgba(216,180,106,.32)',
-          }}
-        />
-      </div>
     </div>
   );
 }

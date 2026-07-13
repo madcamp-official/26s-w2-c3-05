@@ -7,10 +7,14 @@ import type { FaceParamsRef } from "../types";              // ← 추가
 
 export function VRMAvatar({
   faceParamsRef,
+  modelSrc = "/avatar.vrm",
+  frame = "face",
   style,
 }: {
-  faceParamsRef: FaceParamsRef;
-  style?: CSSProperties; // 크기·배치를 호출부에서 지정 (기본 480×480)
+  faceParamsRef?: FaceParamsRef; // 없으면 트래킹 없는 idle 아바타 (신하 등)
+  modelSrc?: string;             // 사용할 VRM 파일 경로 (기본: 공주 아바타)
+  frame?: "face" | "full";       // face: 기존 얼굴 프레이밍 / full: 전신 자동 프레이밍
+  style?: CSSProperties;         // 크기·배치를 호출부에서 지정 (기본 480×480)
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -47,7 +51,7 @@ export function VRMAvatar({
     const loader = new GLTFLoader();
     loader.register((parser) => new VRMLoaderPlugin(parser));
     loader
-      .loadAsync("/avatar.vrm")
+      .loadAsync(modelSrc)
       .then((gltf) => {
         if (disposed) return;              // 로드 중 언마운트되면 버림
         vrm = gltf.userData.vrm as VRM;    // 파싱된 VRM은 여기에 담김
@@ -60,6 +64,20 @@ export function VRMAvatar({
             const rightArm = vrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
             if (leftArm) leftArm.rotation.z = rad;
             if (rightArm) rightArm.rotation.z = -rad;
+
+        // frame="full": 모델 크기(gnome처럼 키가 다른 모델 포함)에 맞춰 전신이 잡히게 카메라 자동 배치
+        if (frame === "full") {
+          const box = new THREE.Box3().setFromObject(vrm.scene);
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          const fovRad = THREE.MathUtils.degToRad(camera.fov);
+          // 세로/가로 중 더 많이 필요한 거리로 맞추고 15% 여유
+          const distH = size.y / 2 / Math.tan(fovRad / 2);
+          const distW = size.x / 2 / (Math.tan(fovRad / 2) * camera.aspect);
+          const dist = Math.max(distH, distW) * 1.15 + size.z / 2;
+          camera.position.set(0, center.y, dist);
+          camera.lookAt(0, center.y, 0);
+        }
       })
       .catch((e) => console.error("VRM 로드 실패:", e));
 
@@ -70,7 +88,9 @@ export function VRMAvatar({
       rafId = requestAnimationFrame(animate);
       const delta = clock.getDelta();      // 지난 프레임과의 시간차(초)
       if (vrm) {
-          applyFaceParams(vrm, faceParamsRef.current); // <- 표정 적용 (반드시 update 전에)
+          if (faceParamsRef) {
+            applyFaceParams(vrm, faceParamsRef.current); // <- 표정 적용 (반드시 update 전에)
+          }
           vrm?.update(delta);                  // 스프링본(머리카락·옷 흔들림) 갱신
           }
       renderer.render(scene, camera);
@@ -96,7 +116,7 @@ export function VRMAvatar({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [faceParamsRef]);
+  }, [faceParamsRef, modelSrc, frame]);
 
   return <div ref={containerRef} style={{ width: 480, height: 480, ...style }} />;
 }

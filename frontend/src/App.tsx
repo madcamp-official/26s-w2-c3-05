@@ -131,10 +131,10 @@ export async function checkUserNickname(nickname: string): Promise<boolean> {
 
 
 // - - - - - - - - - - - - - - - - - - - -
-// 3. 유저 `/users`
+// 3. 유저 `/users` - WIP
 // - - - - - - - - - - - - - - - - - - - -
 
-// !! WIP !! 
+// test required
 export async function getUserInfo(): Promise<UserInfo> {
   const user = await request<UserInfo>(`/users/me`, {
     method: "GET",
@@ -144,7 +144,7 @@ export async function getUserInfo(): Promise<UserInfo> {
   return user
 }
 
-// !! WIP !! 
+// test required
 export async function patchUserNickname(nickname: string): Promise<boolean> {
   const response = await request<boolean>(`/users/me`, {
     method: "PATCH",
@@ -156,19 +156,19 @@ export async function patchUserNickname(nickname: string): Promise<boolean> {
   return response
 }
 
-// !! WIP !! 
+// test required
 export async function patchUserPassword(password: string): Promise<UserInfo> {
-  const user = await request<UserInfo>(`/users/me/password`, {
+  const response = await request<UserInfo>(`/users/me/password`, {
     method: "PATCH",
     headers: HEADER,
     body: JSON.stringify({ 
       user_pw: password })
     });
 
-  return user
+  return response
 }
 
-// !! WIP !! 
+// test required
 export async function putUserProfile(userId: string, profile: string): Promise<boolean> {
   const response = await request<boolean>(`/users/me/profile`, {
     method: "PUT",
@@ -181,7 +181,7 @@ export async function putUserProfile(userId: string, profile: string): Promise<b
   return response
 }
 
-// !! WIP !! 
+// test required
 export async function deleteUserProfile(userId: string): Promise<boolean> {
   const response = await request<boolean>(`/users/me/profile`, {
     method: "DELETE",

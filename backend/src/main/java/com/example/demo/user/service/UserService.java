@@ -7,6 +7,7 @@ import com.example.demo.user.entity.Stat;
 import com.example.demo.user.entity.UserInfo;
 import com.example.demo.user.repository.StatRepository;
 import com.example.demo.user.repository.UserRepository;
+import com.example.demo.user.dto.MyPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +27,7 @@ public class UserService {
     @Transactional
     public void signup(SignupRequest req) {
         if (userRepository.existsById(req.userId())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 입궁한 환관입니다.");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 입궁한 내신입니다.");
         }
 
         UserInfo user = UserInfo.builder()
@@ -54,4 +55,19 @@ public class UserService {
         return jwtProvider.createToken(user.getUserId());
     }
 
+    @Transactional(readOnly = true)
+    public MyPageResponse getProfile(String userId) {
+        UserInfo user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 재상(宰相)입니다."));
+        Stat stat = statRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "연회 내역이 없습니다."));
+        return MyPageResponse.of(user, stat);
+    }
+
+    @Transactional
+    public void updateNickname(String userId, String nickname) {
+        UserInfo user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 내신입니다."));
+        user.setUserNickname(nickname); // 더티체킹으로 UPDATE
+    }
 }

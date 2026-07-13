@@ -6,6 +6,9 @@ import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 
+/** 공주가 한 라운드에 하사할 수 있는 어점 총량 */
+const AWARDS_PER_ROUND = 5;
+
 interface GameState {
   round: number;
   secLeft: number;
@@ -15,6 +18,7 @@ interface GameState {
   micOn: boolean;
   chat: ChatMsg[];
   interstitial: boolean;
+  awardsThisRound: number; // 이번 라운드에 공주가 하사한 어점 수 (라운드마다 0으로 리셋)
 }
 
 /** 신하(관객) 배치: 화면 하단에서 옥좌를 향해 도열 */
@@ -37,6 +41,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
       speaking: {},
       micOn: true,
       interstitial: false,
+      awardsThisRound: 0,
       chat: [
         { kind: 'system', text: '제1연(第一宴)이 개막하였사옵니다' },
         { kind: 'system', text: `${nick} 님께서 공주로 간택되셨사옵니다 ♕` },
@@ -73,7 +78,13 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
     setG((prev) => ({ ...prev, chat: [...prev.chat, msg].slice(-80) }));
 
   const award = (target: string) => {
-    setG((prev) => ({ ...prev, scores: { ...prev.scores, [target]: (prev.scores[target] ?? 0) + 1 } }));
+    // 라운드당 어점 한도 초과 시 무시 (공주·봇 공통)
+    if (gRef.current.awardsThisRound >= AWARDS_PER_ROUND) return;
+    setG((prev) => ({
+      ...prev,
+      scores: { ...prev.scores, [target]: (prev.scores[target] ?? 0) + 1 },
+      awardsThisRound: prev.awardsThisRound + 1,
+    }));
     pushChat({ kind: 'system', text: `공주께서 ${target} 님에게 어점(御點)을 하사하셨사옵니다 ✦` });
   };
 
@@ -93,7 +104,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
         const top = allNames.filter((n) => (now.scores[n] ?? 0) === max);
         const princess = top[Math.floor(Math.random() * top.length)];
         const round = now.round + 1;
-        setG((prev) => ({ ...prev, round, princess, secLeft: ROUND_SECONDS, interstitial: false }));
+        setG((prev) => ({ ...prev, round, princess, secLeft: ROUND_SECONDS, interstitial: false, awardsThisRound: 0 }));
         pushChat({
           kind: 'system',
           text: `제${round}연이 개막하였사옵니다 — ${princess} 님이 공주로 등극하셨사옵니다 ♕`,
@@ -171,6 +182,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
   };
 
   const iAmPrincess = g.princess === nick;
+  const awardsLeft = AWARDS_PER_ROUND - g.awardsThisRound; // 이번 라운드 남은 어점
   const princessFace = faceSourceFor(g.princess); // 공주의 라이브 얼굴 소스(없으면 정적 이미지)
   const low = g.secLeft <= 30;
   const mmss = `${Math.floor(Math.max(0, g.secLeft) / 60)}:${String(Math.max(0, g.secLeft) % 60).padStart(2, '0')}`;
@@ -212,7 +224,12 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
 
         {/* HUD */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 0', zIndex: 2 }}>
-          <div style={{ flex: 1 }} />
+          {/* 공주 마이크 토글 (옥좌 3D에 묻히지 않게 화면 고정 HUD에 배치) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+            {iAmPrincess && (
+              <MicButton micOn={g.micOn} onClick={() => setG((p) => ({ ...p, micOn: !p.micOn }))} />
+            )}
+          </div>
           <Pill>
             <div
               style={{
@@ -452,9 +469,8 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      그대가 공주이옵니다 — 어점(御點)을 하사하소서
+                      그대가 공주이옵니다 — 어점(御點)을 하사하소서 · 남은 어점 {Math.max(0, awardsLeft)}/{AWARDS_PER_ROUND}
                     </div>
-                    <MicButton micOn={g.micOn} onClick={() => setG((p) => ({ ...p, micOn: !p.micOn }))} />
                     <BowButton disabled />
                   </div>
                 )}
@@ -501,7 +517,17 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   {iAmPrincess && !p.isMe && (
                     <button
                       onClick={() => award(p.name)}
-                      style={{ ...primaryBtn, padding: '5px 11px', borderRadius: 7, fontSize: 11.5, letterSpacing: 1 }}
+                      disabled={awardsLeft <= 0}
+                      title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                      style={{
+                        ...primaryBtn,
+                        padding: '5px 11px',
+                        borderRadius: 7,
+                        fontSize: 11.5,
+                        letterSpacing: 1,
+                        opacity: awardsLeft <= 0 ? 0.4 : 1,
+                        cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                      }}
                     >
                       ✦ 어점 하사
                     </button>

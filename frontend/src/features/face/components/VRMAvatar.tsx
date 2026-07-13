@@ -18,12 +18,14 @@ export function VRMAvatar({
   motionRef,
   modelSrc = "/avatar.vrm",
   frame = "face",
+  poseArmsDown = true,
   style,
 }: {
   faceParamsRef?: FaceParamsRef; // 없으면 트래킹 없는 idle 아바타 (신하 등)
   motionRef?: AvatarMotionRef;   // 엎드리기 등 일회성 모션 트리거 (선택)
   modelSrc?: string;             // 사용할 VRM 파일 경로 (기본: 공주 아바타)
   frame?: "face" | "full";       // face: 기존 얼굴 프레이밍 / full: 전신 자동 프레이밍
+  poseArmsDown?: boolean;        // T-pose 팔 내리기 보정 (스캔/흉상은 false로 끄기, 기본 true)
   style?: CSSProperties;         // 크기·배치를 호출부에서 지정 (기본 480×480)
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -68,12 +70,15 @@ export function VRMAvatar({
         VRMUtils.rotateVRM0(vrm);          // VRM0.x 모델이 뒤돌아 있는 것 보정
         scene.add(vrm.scene);
 
-        // ↓ 추가: T포즈 → 팔을 아래로 내린 정지 자세
+        // T포즈 모델(avatar.vrm 등)은 팔을 아래로 내려 정지 자세로 만든다.
+        // 이미 팔이 포즈된 스캔/흉상 모델은 poseArmsDown=false로 이 보정을 끈다.
+        if (poseArmsDown) {
             const rad = THREE.MathUtils.degToRad(70); // 내리는 각도 (65~75 사이 취향껏)
             const leftArm = vrm.humanoid?.getNormalizedBoneNode("leftUpperArm");
             const rightArm = vrm.humanoid?.getNormalizedBoneNode("rightUpperArm");
             if (leftArm) leftArm.rotation.z = rad;
             if (rightArm) rightArm.rotation.z = -rad;
+        }
 
         // frame="full": 모델 크기(gnome처럼 키가 다른 모델 포함)에 맞춰 전신이 잡히게 카메라 자동 배치
         if (frame === "full") {
@@ -155,7 +160,7 @@ export function VRMAvatar({
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [faceParamsRef, motionRef, modelSrc, frame]);
+  }, [faceParamsRef, motionRef, modelSrc, frame, poseArmsDown]);
 
   return <div ref={containerRef} style={{ width: 480, height: 480, ...style }} />;
 }

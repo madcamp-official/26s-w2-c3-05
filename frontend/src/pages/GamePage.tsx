@@ -842,7 +842,7 @@ function BowButton({ disabled = false, onClick }: { disabled?: boolean; onClick?
         whiteSpace: 'nowrap',
       }}
     >
-      🙇 엎드리기
+      조아리기
     </button>
   );
 }
@@ -1011,8 +1011,9 @@ function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: strin
       }}
     >
       <VRMAvatar
-        modelSrc="/servants.vrm"
+        modelSrc="/servant.vrm"
         frame="full"
+        poseArmsDown={false} // 이미 팔이 포즈된 스캔 흉상 → T-pose 팔 내리기 보정 끔(뚱뚱 방지)
         motionRef={motionRef}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       />

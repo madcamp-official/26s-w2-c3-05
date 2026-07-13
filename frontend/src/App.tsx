@@ -7,6 +7,7 @@ import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
 
 const BASE_URL = 'https://example.com';
+const WS_URL = 'ws://localhost:8080';
 
 const HEADER = {
   "Content-Type": "application/json",
@@ -36,13 +37,16 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
   return response.json() as Promise<T>;
 }
 
-// // 실제 호출 시 사용법
-// async function getUserData() {
-//   // request 함수 호출 시 <User> 타입을 주입
-//   const user = await request<User>('https://example.com');
-//   console.log(user.name); 
-// }
+// 개발 전용: ws API 요청 함수
+export async function requestWebSocket<T>(endpoint: string, options?: StrictRequestInit): Promise<T> {
+  const response = await fetch(`${WS_URL}${endpoint}`, options);
 
+  if (!response.ok) {
+    throw new Error(`네트워크 응답 에러: ${response.statusText}`);
+  }
+
+  return response.json() as Promise<T>;
+}
 
 // - - - - - - - - - - - - - - - - - - - -
 // 2. 인증 `/auth`
@@ -653,6 +657,15 @@ export async function getNotificationUnreadCount(): Promise<number> {
 // 9. 실시간 게임 (WebSocket / STOMP)
 // - - - - - - - - - - - - - - - - - - - -
 
+// !! WIP !!
+export async function openWebSocket(): Promise<number> {
+  const response = await requestWebSocket<number>(`/ws`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return response;
+}
 
 // - - - - - - - - - - - - - - - - - - - -
 // 10. 시스템 · 메타

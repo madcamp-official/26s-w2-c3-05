@@ -2,11 +2,11 @@ export type Screen = 'login' | 'lobby' | 'waiting' | 'game' | 'result';
 
 export interface Room {
   room_id: number;
-  creator_id: string; // host's id
+  // creator_id: string; // host's id
   room_name: string; // name
   room_host: string; // host
-  player_limit: number; // count
-  room_cap: number; // cap 
+  room_count: number; // count
+  player_limit: number; // cap 
   round_limit: number;
   time_limit: number;
   room_pw?: string;

@@ -12,8 +12,7 @@ export default function LoginPage({ onEnter }: { onEnter: (nick: string) => void
 
   const { setMusicSrc } = useAudio();
   useEffect(() => {
-    // 홈 페이지에 오면 쾌활한 음악으로 변경
-    setMusicSrc('/music/lobby_theme.mp3');
+    setMusicSrc('../../public/assets/bgm/bgm_lobby.mp3');
   }, [setMusicSrc]);
 
   return (

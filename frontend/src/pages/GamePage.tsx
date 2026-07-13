@@ -6,6 +6,8 @@ import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 
+import { useAudio } from '../components/AudioContext';
+
 /** 공주가 한 라운드에 하사할 수 있는 어점 총량 */
 const AWARDS_PER_ROUND = 5;
 
@@ -209,6 +211,11 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
       pos: POS[i % POS.length],
       delay: `${i * 0.9}s`,
     }));
+
+  const { setMusicSrc } = useAudio();
+  useEffect(() => {
+    setMusicSrc('../../public/assets/bgm/bgm_gameplay1.mp3');
+  }, [setMusicSrc]);  
 
   return (
     <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>

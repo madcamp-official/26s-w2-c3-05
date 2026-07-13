@@ -2,6 +2,9 @@ import type { Room } from '../types/game';
 import { ROOMS } from '../constants/game';
 import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 
+import { useEffect } from 'react';
+import { useAudio } from '../components/AudioContext';
+
 export default function LobbyPage({
   nick,
   onJoin,
@@ -11,6 +14,13 @@ export default function LobbyPage({
   onJoin: (room: Room) => void;
   onRetreat: () => void;
 }) {
+
+  const { setMusicSrc } = useAudio();
+  useEffect(() => {
+      // 홈 페이지에 오면 쾌활한 음악으로 변경
+      setMusicSrc('../../public/assets/bgm/bgm_lobby.mp3');
+    }, [setMusicSrc]);
+
   return (
     <Backdrop
       image="/assets/bg-lobby.png"

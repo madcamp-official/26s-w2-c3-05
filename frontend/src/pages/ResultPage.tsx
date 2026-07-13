@@ -2,6 +2,9 @@ import type { Scores } from '../types/game';
 import { BOTS, RANK_HANJA } from '../constants/game';
 import { Divider, Backdrop, GOLD, primaryBtn, ghostBtn, panel } from '../components/ui';
 
+import { useEffect } from 'react';
+import { useAudio } from '../components/AudioContext';
+
 export default function ResultPage({
   nick,
   scores,
@@ -16,6 +19,12 @@ export default function ResultPage({
   const names = [nick, ...BOTS.map((b) => b.name)];
   const sorted = names.map((n) => ({ name: n, score: scores[n] ?? 0 })).sort((a, b) => b.score - a.score);
   const winner = sorted[0];
+
+  const { setMusicSrc } = useAudio();
+    useEffect(() => {
+        // 홈 페이지에 오면 쾌활한 음악으로 변경
+        setMusicSrc('../../public/assets/bgm/bgm_result.mp3');
+      }, [setMusicSrc]);
 
   return (
     <Backdrop

@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
+import ReactDOM from 'react-dom/client';
+import { AudioProvider } from './components/AudioContext';
+
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
 import LobbyPage from './pages/LobbyPage';
@@ -703,6 +706,18 @@ export async function getVersion(): Promise<string> {
   return response.data
 }
 
+
+// Audio Functions
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <AudioProvider>
+      <App />
+    </AudioProvider>
+  </React.StrictMode>
+);
+
+// Stages and Main App
 
 type Stage =
   | { screen: 'login' }

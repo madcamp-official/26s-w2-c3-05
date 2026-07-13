@@ -432,7 +432,7 @@ export async function playerStart(userId: string, roomId: number): Promise<boole
 // - - - - - - - - - - - - - - - - - - - -
 // !! WIP !! 
 export async function getGameSnapshot(roomId: number): Promise<Room> {
-  const room = await request<Room>(`/rooms/${roomId}/game`, {
+  const room = await request<Record<string, any>>(`/rooms/${roomId}/game`, {
     method: "GET",
     headers: HEADER
   });
@@ -443,7 +443,7 @@ export async function getGameSnapshot(roomId: number): Promise<Room> {
 // !! WIP !! 
 // REST 폴백 준비
 export async function giveAward(roomId: number, targetUserId: string): Promise<number> {
-  const response = await request<number>(`/rooms/${roomId}/game/award`, {
+  const response = await request<Record<string, any>>(`/rooms/${roomId}/game/award`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -499,7 +499,7 @@ export async function getTopicByID(topicId: number): Promise<Topic> {
 // !! WIP !!
 // 인증 필요
 export async function postTopic(topicId: number, topicHead: string): Promise<number> {
-  const response = await request<number>(`/topics`, {
+  const response = await request<Record<string, any>>(`/topics`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -515,7 +515,7 @@ export async function postTopic(topicId: number, topicHead: string): Promise<num
 // !! WIP !!
 // 인증 필요
 export async function putTopic(topicId: number, topicHead: string): Promise<number> {
-  const response = await request<number>(`/topics/${topicId}`, {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "PUT",
     headers: HEADER,
     body: JSON.stringify({
@@ -528,10 +528,10 @@ export async function putTopic(topicId: number, topicHead: string): Promise<numb
   return response
 }
 
-// !! WIP !!
+// test required
 // 인증 필요
-export async function deleteTopic(topicId: number): Promise<number> {
-  const response = await request<number>(`/topics/${topicId}`, {
+export async function deleteTopic(userId: string, topicId: number): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/topics/${topicId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -540,43 +540,46 @@ export async function deleteTopic(topicId: number): Promise<number> {
     })
   });
   
-  return response
+  return response.success
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 7. 친구 `/friends`
 // - - - - - - - - - - - - - - - - - - - -
 
+// test required
 export async function getFriends(): Promise<UserFriends[]> {
-  const friends = await request<UserFriends[]>(`/friends`, {
+  const response = await request<Record<string, any>>(`/friends`, {
     method: "GET",
     headers: HEADER
   });
   
-  return friends;
+  return response.data
 }
 
+// test required
 export async function getFriendsRequestsToMe(): Promise<Notification[]> {
-  const requests = await request<Notification[]>(`/friends/requests/received`, {
+  const response = await request<Record<string, any>>(`/friends/requests/received`, {
     method: "GET",
     headers: HEADER
   });
   
-  return requests;
+  return response.data
 }
 
+// test required
 export async function getFriendsRequestsByMe(): Promise<Notification[]> {
-  const requests = await request<Notification[]>(`/friends/requests/sent`, {
+  const response = await request<Record<string, any>>(`/friends/requests/sent`, {
     method: "GET",
     headers: HEADER
   });
   
-  return requests;
+  return response.data
 }
 
-// !! WIP !!
-export async function sendFriendsRequests(toUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests`, {
+// test required
+export async function sendFriendsRequests(userId: string, toUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -585,12 +588,12 @@ export async function sendFriendsRequests(toUserId: string): Promise<number> {
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function acceptFriendsRequests(fromUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests/${fromUserId}/accept`, {
+// test required
+export async function acceptFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}/accept`, {
     method: "POST",
     headers: HEADER,
     body: JSON.stringify({
@@ -599,12 +602,12 @@ export async function acceptFriendsRequests(fromUserId: string): Promise<number>
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function deleteFriendsRequests(fromUserId: string): Promise<number> {
-  const response = await request<number>(`/friends/requests/${fromUserId}`, {
+// test required
+export async function deleteFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -613,12 +616,12 @@ export async function deleteFriendsRequests(fromUserId: string): Promise<number>
     })
   });
   
-  return response;
+  return response.success
 }
 
-// !! WIP !!
-export async function deleteFriends(userId: string): Promise<number> {
-  const response = await request<number>(`/friends/${userId}`, {
+// test required
+export async function deleteFriends(userId: string): Promise<boolean> {
+  const response = await request<Record<string, any>>(`/friends/${userId}`, {
     method: "DELETE",
     headers: HEADER,
     body: JSON.stringify({
@@ -626,7 +629,7 @@ export async function deleteFriends(userId: string): Promise<number> {
     })
   });
   
-  return response;
+  return response.success
 }
 
 
@@ -635,22 +638,22 @@ export async function deleteFriends(userId: string): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 // !! WIP !!
 export async function getNotifications(page: number, size: number): Promise<Notification[]> {
-  const notifications = await request<Notification[]>(`/notifications?page=${page}&size=${size}`, {
+  const response = await request<Record<string, any>>(`/notifications?page=${page}&size=${size}`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return notifications;
+  return response.data
 }
 
-// !! WIP !!
+// test required
 export async function getNotificationUnreadCount(): Promise<number> {
-  const unread_count = await request<number>(`/notifications/unread-count`, {
+  const response = await request<Record<string, any>>(`/notifications/unread-count`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return unread_count;
+  return response.data
 }
 
 // !! WIP !! user/queue/notifications
@@ -660,13 +663,13 @@ export async function getNotificationUnreadCount(): Promise<number> {
 // - - - - - - - - - - - - - - - - - - - -
 
 // !! WIP !!
-export async function openWebSocket(): Promise<number> {
-  const response = await requestWebSocket<number>(`/ws`, {
+export async function openWebSocket(): Promise<boolean> {
+  const response = await requestWebSocket<Record<string, any>>(`/ws`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return response
+  return response.success
 }
 
 // - - - - - - - - - - - - - - - - - - - -
@@ -675,22 +678,22 @@ export async function openWebSocket(): Promise<number> {
 
 // test required
 export async function getHealth(): Promise<number> {
-  const health = await request<number>(`/health`, {
+  const response = await request<Record<string, any>>(`/health`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return health
+  return response.data
 }
 
 // test required
 export async function getVersion(): Promise<string> {
-  const version = await request<string>(`/version`, {
+  const response = await request<Record<string, any>>(`/version`, {
     method: "GET",
-    headers: HEADER,
+    headers: HEADER
   });
   
-  return version
+  return response.data
 }
 
 

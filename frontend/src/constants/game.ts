@@ -15,12 +15,12 @@ export const BOTS: Bot[] = [
 
 /** 데모용 방 목록 */
 export const ROOMS: Room[] = [
-  { name: '모란정', hanja: '牡丹亭', host: '매향', count: 3, cap: 6, open: true },
-  { name: '봉황궁', hanja: '鳳凰宮', host: '임소상', count: 5, cap: 6, open: false },
-  { name: '옥로전', hanja: '玉露殿', host: '화예비', count: 2, cap: 5, open: true },
-  { name: '청운각', hanja: '靑雲閣', host: '한서정', count: 6, cap: 6, open: false },
-  { name: '월하방', hanja: '月下房', host: '유란', count: 1, cap: 5, open: true },
-  { name: '금란지', hanja: '金蘭池', host: '소백향', count: 4, cap: 6, open: true },
+  { room_id: 0, room_name: '모란정', room_host: '매향', room_count: 3, player_limit: 6, round_limit: 5, time_limit: 300, can_access: true },
+  { room_id: 1, room_name: '봉황궁', room_host: '임소상', room_count: 5, player_limit: 6, round_limit: 5, time_limit: 300, can_access: false },
+  { room_id: 2, room_name: '옥로전', room_host: '화예비', room_count: 2, player_limit: 5, round_limit: 5, time_limit: 300, can_access: true },
+  { room_id: 3, room_name: '청운각', room_host: '한서정', room_count: 6, player_limit: 6, round_limit: 5, time_limit: 300, can_access: false },
+  { room_id: 4, room_name: '월하방', room_host: '유란', room_count: 1, player_limit: 5, round_limit: 5, time_limit: 300, can_access: true },
+  { room_id: 5, room_name: '금란지', room_host: '소백향', room_count: 4, player_limit: 6, round_limit: 5, time_limit: 300, can_access: true },
 ];
 
 export const BOT_LINES = [

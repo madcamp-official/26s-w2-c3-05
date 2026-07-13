@@ -1,8 +1,16 @@
 import type { Room } from '../types/game';
 import { ROOMS } from '../constants/game';
-import { Divider, Seal, Backdrop, GOLD, primaryBtn } from '../components/ui';
+import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 
-export default function LobbyPage({ nick, onJoin }: { nick: string; onJoin: (room: Room) => void }) {
+export default function LobbyPage({
+  nick,
+  onJoin,
+  onRetreat 
+}: {
+  nick: string;
+  onJoin: (room: Room) => void;
+  onRetreat: () => void;
+}) {
   return (
     <Backdrop
       image="/assets/bg-lobby.png"
@@ -37,8 +45,14 @@ export default function LobbyPage({ nick, onJoin }: { nick: string; onJoin: (roo
         <Divider margin="26px 0 30px" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: 22 }}>
           {ROOMS.map((r) => (
-            <RoomCard key={r.name} room={r} onJoin={() => onJoin(r)} />
+            <RoomCard key={r.room_id} room={r} onJoin={() => onJoin(r)} />
           ))}
+        </div>
+        <Divider margin="26px 0 30px" />
+        <div>
+          <button onClick={onRetreat} style={{ ...ghostBtn, padding: '12px 20px', fontSize: 14, letterSpacing: 2 }}>
+            나가기
+          </button>
         </div>
       </div>
     </Backdrop>
@@ -66,7 +80,7 @@ function RoomCard({ room: r, onJoin }: { room: Room; onJoin: () => void }) {
             width: 40,
             height: 40,
             borderRadius: 8,
-            background: r.open ? 'linear-gradient(180deg,#9c2027,#701318)' : 'rgba(60,30,22,.8)',
+            background: r.can_access ? 'linear-gradient(180deg,#9c2027,#701318)' : 'rgba(60,30,22,.8)',
             border: `1px solid ${GOLD(0.6)}`,
             display: 'flex',
             alignItems: 'center',
@@ -77,13 +91,12 @@ function RoomCard({ room: r, onJoin }: { room: Room; onJoin: () => void }) {
             flex: 'none',
           }}
         >
-          {r.hanja[0]}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: "'Song Myung', serif", fontSize: 22, color: '#f0e2bf', letterSpacing: 2 }}>
-            {r.name} <span style={{ fontSize: 14, color: 'rgba(238,217,164,.55)' }}>{r.hanja}</span>
+            {r.room_name} <span style={{ fontSize: 14, color: 'rgba(238,217,164,.55)' }}></span>
           </div>
-          <div style={{ marginTop: 3, fontSize: 12.5, color: 'rgba(240,226,191,.6)' }}>전주(殿主) · {r.host}</div>
+          <div style={{ marginTop: 3, fontSize: 12.5, color: 'rgba(240,226,191,.6)' }}>전주(殿主) · {r.room_host}</div>
         </div>
         <div
           style={{
@@ -92,49 +105,49 @@ function RoomCard({ room: r, onJoin }: { room: Room; onJoin: () => void }) {
             borderRadius: 999,
             fontSize: 12,
             letterSpacing: 1,
-            border: `1px solid ${r.open ? GOLD(0.6) : 'rgba(216,67,75,.55)'}`,
-            color: r.open ? '#eed9a4' : '#e89096',
-            background: r.open ? GOLD(0.08) : 'rgba(200,50,58,.14)',
+            border: `1px solid ${r.can_access ? GOLD(0.6) : 'rgba(216,67,75,.55)'}`,
+            color: r.can_access ? '#eed9a4' : '#e89096',
+            background: r.can_access ? GOLD(0.08) : 'rgba(200,50,58,.14)',
           }}
         >
-          {r.open ? '대기중' : '연회중'}
+          {r.can_access ? '대기중' : '연회중'}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{ display: 'flex', gap: 5 }}>
-          {Array.from({ length: r.cap }, (_, i) => (
+          {Array.from({ length: r.player_limit }, (_, i) => (
             <div
               key={i}
               style={{
                 width: 9,
                 height: 9,
                 transform: 'rotate(45deg)',
-                background: i < r.count ? '#d8b46a' : GOLD(0.08),
+                background: i < r.room_count ? '#d8b46a' : GOLD(0.08),
                 border: `1px solid ${GOLD(0.5)}`,
               }}
             />
           ))}
         </div>
         <div style={{ fontSize: 13, color: 'rgba(240,226,191,.75)', marginLeft: 4 }}>
-          {r.count} / {r.cap} 명
+          {r.room_count} / {r.player_limit} 명
         </div>
       </div>
       <button
         onClick={onJoin}
-        disabled={!r.open}
+        disabled={!r.can_access}
         style={{
           padding: 12,
           borderRadius: 8,
           fontSize: 14,
           fontWeight: 600,
           letterSpacing: 3,
-          cursor: r.open ? 'pointer' : 'default',
-          border: `1px solid ${r.open ? GOLD(0.6) : GOLD(0.2)}`,
-          background: r.open ? GOLD(0.1) : 'transparent',
-          color: r.open ? '#f0e2bf' : 'rgba(240,226,191,.35)',
+          cursor: r.can_access ? 'pointer' : 'default',
+          border: `1px solid ${r.can_access ? GOLD(0.6) : GOLD(0.2)}`,
+          background: r.can_access ? GOLD(0.1) : 'transparent',
+          color: r.can_access ? '#f0e2bf' : 'rgba(240,226,191,.35)',
         }}
       >
-        {r.open ? '입장하기' : '연회 진행중'}
+        {r.can_access ? '입장하기' : '연회 진행중'}
       </button>
     </div>
   );

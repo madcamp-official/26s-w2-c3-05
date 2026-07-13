@@ -2,9 +2,12 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type 
 import type { ChatMsg, Scores } from '../types/game';
 import { BOTS, BOT_CHATTER, BOT_LINES, PRINCESS_LINES, ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
 import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
-import { VRMAvatar } from '../features/face/components/VRMAvatar';
+import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
+
+/** 공주가 한 라운드에 하사할 수 있는 어점 총량 */
+const AWARDS_PER_ROUND = 5;
 
 interface GameState {
   round: number;
@@ -15,6 +18,7 @@ interface GameState {
   micOn: boolean;
   chat: ChatMsg[];
   interstitial: boolean;
+  awardsThisRound: number; // 이번 라운드에 공주가 하사한 어점 수 (라운드마다 0으로 리셋)
 }
 
 /** 신하(관객) 배치: 화면 하단에서 옥좌를 향해 도열 */
@@ -37,6 +41,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
       speaking: {},
       micOn: true,
       interstitial: false,
+      awardsThisRound: 0,
       chat: [
         { kind: 'system', text: '제1연(第一宴)이 개막하였사옵니다' },
         { kind: 'system', text: `${nick} 님께서 공주로 간택되셨사옵니다 ♕` },
@@ -56,6 +61,22 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
   // 얼굴 트래킹: 로컬 사용자의 웹캠 → faceParamsRef → VRM 아바타(표정·머리회전)
   const faceParamsRef = useRef<FaceParams>(initialFaceParams);
 
+  // 엎드리기 모션 트리거: 버튼 → myBowRef → 내 신하 아바타 렌더 루프
+  // TODO(멀티플레이): 서버 중계로 다른 유저의 엎드리기도 각자의 motionRef에 매핑한다.
+  const myBowRef = useRef<AvatarMotion>({ action: null });
+
+  // 절할 때 뜨는 대사 말풍선 노출 상태 (내 신하 기준)
+  const [bowSpeaking, setBowSpeaking] = useState(false);
+  const bowSpeechTimer = useRef<number | undefined>(undefined);
+  // 엎드리기: 아바타 모션 + '소인 죽을죄를…' 말풍선을 함께 띄운다
+  const triggerBow = () => {
+    myBowRef.current.action = 'bow';
+    setBowSpeaking(true);
+    window.clearTimeout(bowSpeechTimer.current);
+    bowSpeechTimer.current = window.setTimeout(() => setBowSpeaking(false), 2000);
+  };
+  useEffect(() => () => window.clearTimeout(bowSpeechTimer.current), []);
+
   // 공주로 간택된 플레이어의 얼굴 소스를 반환한다.
   // 현재는 로컬 사용자(nick)만 웹캠 소스를 가지므로, 내가 공주일 때만 라이브 아바타가 뜬다.
   // TODO(멀티플레이): 하인 역할의 실제 유저들이 참여하면, 원격 유저별 FaceParamsRef를
@@ -69,7 +90,13 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
     setG((prev) => ({ ...prev, chat: [...prev.chat, msg].slice(-80) }));
 
   const award = (target: string) => {
-    setG((prev) => ({ ...prev, scores: { ...prev.scores, [target]: (prev.scores[target] ?? 0) + 1 } }));
+    // 라운드당 어점 한도 초과 시 무시 (공주·봇 공통)
+    if (gRef.current.awardsThisRound >= AWARDS_PER_ROUND) return;
+    setG((prev) => ({
+      ...prev,
+      scores: { ...prev.scores, [target]: (prev.scores[target] ?? 0) + 1 },
+      awardsThisRound: prev.awardsThisRound + 1,
+    }));
     pushChat({ kind: 'system', text: `공주께서 ${target} 님에게 어점(御點)을 하사하셨사옵니다 ✦` });
   };
 
@@ -89,7 +116,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
         const top = allNames.filter((n) => (now.scores[n] ?? 0) === max);
         const princess = top[Math.floor(Math.random() * top.length)];
         const round = now.round + 1;
-        setG((prev) => ({ ...prev, round, princess, secLeft: ROUND_SECONDS, interstitial: false }));
+        setG((prev) => ({ ...prev, round, princess, secLeft: ROUND_SECONDS, interstitial: false, awardsThisRound: 0 }));
         pushChat({
           kind: 'system',
           text: `제${round}연이 개막하였사옵니다 — ${princess} 님이 공주로 등극하셨사옵니다 ♕`,
@@ -167,6 +194,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
   };
 
   const iAmPrincess = g.princess === nick;
+  const awardsLeft = AWARDS_PER_ROUND - g.awardsThisRound; // 이번 라운드 남은 어점
   const princessFace = faceSourceFor(g.princess); // 공주의 라이브 얼굴 소스(없으면 정적 이미지)
   const low = g.secLeft <= 30;
   const mmss = `${Math.floor(Math.max(0, g.secLeft) / 60)}:${String(Math.max(0, g.secLeft) % 60).padStart(2, '0')}`;
@@ -208,7 +236,12 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
 
         {/* HUD */}
         <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, padding: '18px 20px 0', zIndex: 2 }}>
-          <div style={{ flex: 1 }} />
+          {/* 공주 마이크 토글 (옥좌 3D에 묻히지 않게 화면 고정 HUD에 배치) */}
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
+            {iAmPrincess && (
+              <MicButton micOn={g.micOn} onClick={() => setG((p) => ({ ...p, micOn: !p.micOn }))} />
+            )}
+          </div>
           <Pill>
             <div
               style={{
@@ -367,12 +400,13 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
               />
               {princessFace ? (
                 // 공주로 간택된 사람의 웹캠 얼굴이 실시간 반영되는 VRM 아바타
+                // 병풍(옥좌 뒤 네모 박스) 규격에 맞게 크게 표시
                 <VRMAvatar
                   faceParamsRef={princessFace}
                   style={{
                     position: 'relative',
-                    width: 'min(40vh, 380px)',
-                    height: 'min(34vh, 330px)',
+                    width: 'min(58vh, 560px)',
+                    height: 'min(48vh, 470px)',
                     animation: 'bob 6s ease-in-out infinite',
                     filter: 'drop-shadow(0 16px 34px rgba(0,0,0,.6))',
                     pointerEvents: 'none',
@@ -385,7 +419,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   alt="공주 버튜버"
                   style={{
                     position: 'relative',
-                    height: 'min(34vh, 330px)',
+                    height: 'min(48vh, 470px)',
                     animation: 'bob 6s ease-in-out infinite',
                     filter: 'drop-shadow(0 16px 34px rgba(0,0,0,.6))',
                     pointerEvents: 'none',
@@ -447,9 +481,9 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                         whiteSpace: 'nowrap',
                       }}
                     >
-                      그대가 공주이옵니다 — 어점(御點)을 하사하소서
+                      그대가 공주이옵니다 — 어점(御點)을 하사하소서 · 남은 어점 {Math.max(0, awardsLeft)}/{AWARDS_PER_ROUND}
                     </div>
-                    <MicButton micOn={g.micOn} onClick={() => setG((p) => ({ ...p, micOn: !p.micOn }))} />
+                    <BowButton disabled />
                   </div>
                 )}
               </div>
@@ -470,6 +504,53 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   gap: 6,
                 }}
               >
+                {/* 절할 때 뜨는 대사 말풍선 (현재는 내 신하만 절 가능 → p.isMe)
+                    TODO(멀티플레이): 원격 신하 절 이벤트도 각자 말풍선으로 표시 */}
+                {p.isMe && bowSpeaking && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: '100%',
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      marginBottom: 10,
+                      zIndex: 6,
+                      animation: 'fadeIn .2s ease both',
+                    }}
+                  >
+                    <div
+                      style={{
+                        position: 'relative',
+                        maxWidth: 132,
+                        textAlign: 'center',
+                        lineHeight: 1.35,
+                        background: 'rgba(18,8,6,.92)',
+                        border: `1px solid ${GOLD(0.6)}`,
+                        borderRadius: 10,
+                        padding: '7px 13px',
+                        color: '#f0e2bf',
+                        fontSize: 12.5,
+                        letterSpacing: 0.5,
+                        boxShadow: `inset 0 0 0 2px rgba(18,8,6,.5), inset 0 0 0 3px ${GOLD(0.18)}, 0 8px 20px rgba(0,0,0,.55)`,
+                      }}
+                    >
+                      소인 죽여주시옵소서...!!!
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: '100%',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          width: 0,
+                          height: 0,
+                          borderLeft: '6px solid transparent',
+                          borderRight: '6px solid transparent',
+                          borderTop: `7px solid ${GOLD(0.6)}`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
                 <div
                   style={{
                     display: 'flex',
@@ -495,16 +576,29 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   {iAmPrincess && !p.isMe && (
                     <button
                       onClick={() => award(p.name)}
-                      style={{ ...primaryBtn, padding: '5px 11px', borderRadius: 7, fontSize: 11.5, letterSpacing: 1 }}
+                      disabled={awardsLeft <= 0}
+                      title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                      style={{
+                        ...primaryBtn,
+                        padding: '5px 11px',
+                        borderRadius: 7,
+                        fontSize: 11.5,
+                        letterSpacing: 1,
+                        opacity: awardsLeft <= 0 ? 0.4 : 1,
+                        cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                      }}
                     >
                       ✦ 어점 하사
                     </button>
                   )}
                   {p.isMe && !iAmPrincess && (
-                    <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                      <BowButton onClick={triggerBow} />
+                    </div>
                   )}
                 </div>
-                <ServantFigure glow={p.isMe} delay={p.delay} />
+                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={p.isMe ? myBowRef : undefined} />
                 <div
                   style={{
                     width: 112,
@@ -729,6 +823,30 @@ function Pill({ children }: { children: ReactNode }) {
   );
 }
 
+/** 엎드리기 버튼 — 신하만 활성, 공주는 비활성 */
+function BowButton({ disabled = false, onClick }: { disabled?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? '공주는 엎드리지 않사옵니다' : '공주마마께 큰절을 올리옵니다'}
+      style={{
+        padding: '4px 11px',
+        borderRadius: 999,
+        border: `1px solid ${GOLD(disabled ? 0.18 : 0.45)}`,
+        background: 'rgba(12,5,4,.6)',
+        color: disabled ? 'rgba(240,226,191,.3)' : '#f0e2bf',
+        fontSize: 11,
+        letterSpacing: 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      조아리기
+    </button>
+  );
+}
+
 function MicButton({ micOn, onClick }: { micOn: boolean; onClick: () => void }) {
   return (
     <button
@@ -876,8 +994,10 @@ function Dais({
   );
 }
 
-/** 신하 실루엣 (관모 + 도포) */
-function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
+/** 신하 아바타 — gnome.vrm 전신 렌더 (기존 CSS 실루엣 대체, sway·glow 연출 유지)
+ *  motionRef: 엎드리기 등 모션 트리거 (내 신하에만 연결)
+ *  TODO(멀티플레이): 유저별 커스텀 VRM을 쓰게 되면 modelSrc를 플레이어 정보에서 받아온다. */
+function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: string; motionRef?: AvatarMotionRef }) {
   return (
     <div
       style={{
@@ -885,68 +1005,18 @@ function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
         width: 96,
         height: 148,
         animation: `sway 5.2s ease-in-out ${delay} infinite`,
-        filter: glow ? 'drop-shadow(0 0 12px rgba(240,205,120,.45))' : 'none',
+        filter: glow
+          ? 'drop-shadow(0 0 12px rgba(240,205,120,.45))'
+          : 'drop-shadow(0 8px 14px rgba(0,0,0,.45))',
       }}
     >
-      <div style={{ position: 'absolute', top: 15, left: -4, width: 28, height: 10, borderRadius: '50%', background: '#1c0d08' }} />
-      <div style={{ position: 'absolute', top: 15, right: -4, width: 28, height: 10, borderRadius: '50%', background: '#1c0d08' }} />
-      <div
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 28,
-          width: 40,
-          height: 24,
-          borderRadius: '50% 50% 42% 42%',
-          background: 'linear-gradient(180deg, #301810, #1c0d08)',
-        }}
+      <VRMAvatar
+        modelSrc="/servant.vrm"
+        frame="full"
+        poseArmsDown={false} // 이미 팔이 포즈된 스캔 흉상 → T-pose 팔 내리기 보정 끔(뚱뚱 방지)
+        motionRef={motionRef}
+        style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       />
-      <div
-        style={{
-          position: 'absolute',
-          top: 14,
-          left: 31,
-          width: 34,
-          height: 30,
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at 36% 34%, #3c2214, #221008 70%)',
-          boxShadow: 'inset -4px -3px 7px rgba(0,0,0,.5), 2px 1px 5px rgba(240,205,120,.14)',
-        }}
-      />
-      <div
-        style={{
-          position: 'absolute',
-          top: 40,
-          left: 0,
-          width: 96,
-          height: 108,
-          clipPath: 'polygon(50% 0%, 63% 5%, 79% 24%, 93% 76%, 100% 100%, 0% 100%, 7% 76%, 21% 24%, 37% 5%)',
-          background: 'linear-gradient(180deg, #381a0e, #1e0d07 72%)',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: 14,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: 9,
-            height: 94,
-            background: 'linear-gradient(180deg, rgba(216,180,106,.4), rgba(216,180,106,.08))',
-          }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: 58,
-            left: '20%',
-            width: '60%',
-            height: 6,
-            borderRadius: 3,
-            background: 'rgba(216,180,106,.32)',
-          }}
-        />
-      </div>
     </div>
   );
 }

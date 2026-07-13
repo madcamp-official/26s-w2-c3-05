@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
-import ReactDOM from 'react-dom/client';
-import { AudioProvider } from './components/AudioContext';
+import { useState } from 'react';
+import MusicControl from './pages/MusicControl';
 
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
@@ -706,17 +705,6 @@ export async function getVersion(): Promise<string> {
   return response.data
 }
 
-
-// Audio Functions
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <AudioProvider>
-      <App />
-    </AudioProvider>
-  </React.StrictMode>
-);
-
 // Stages and Main App
 
 type Stage =
@@ -774,4 +762,6 @@ export default function App() {
         />
       );
   }
+
+  <MusicControl />
 }

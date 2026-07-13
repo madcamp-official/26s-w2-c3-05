@@ -8,7 +8,7 @@ import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
 import { SoundControl } from './components/SoundControl';
 
-const BASE_URL = 'http://localhost:5173'; // 'https://example.com';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 
 const HEADER = {
   "Content-Type": "application/json",

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type 
 import type { ChatMsg, Scores } from '../types/game';
 import { BOTS, BOT_CHATTER, BOT_LINES, PRINCESS_LINES, ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
 import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
-import { VRMAvatar } from '../features/face/components/VRMAvatar';
+import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 
@@ -55,6 +55,10 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
 
   // 얼굴 트래킹: 로컬 사용자의 웹캠 → faceParamsRef → VRM 아바타(표정·머리회전)
   const faceParamsRef = useRef<FaceParams>(initialFaceParams);
+
+  // 엎드리기 모션 트리거: 버튼 → myBowRef → 내 신하 아바타 렌더 루프
+  // TODO(멀티플레이): 서버 중계로 다른 유저의 엎드리기도 각자의 motionRef에 매핑한다.
+  const myBowRef = useRef<AvatarMotion>({ action: null });
 
   // 공주로 간택된 플레이어의 얼굴 소스를 반환한다.
   // 현재는 로컬 사용자(nick)만 웹캠 소스를 가지므로, 내가 공주일 때만 라이브 아바타가 뜬다.
@@ -367,12 +371,13 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
               />
               {princessFace ? (
                 // 공주로 간택된 사람의 웹캠 얼굴이 실시간 반영되는 VRM 아바타
+                // 병풍(옥좌 뒤 네모 박스) 규격에 맞게 크게 표시
                 <VRMAvatar
                   faceParamsRef={princessFace}
                   style={{
                     position: 'relative',
-                    width: 'min(40vh, 380px)',
-                    height: 'min(34vh, 330px)',
+                    width: 'min(58vh, 560px)',
+                    height: 'min(48vh, 470px)',
                     animation: 'bob 6s ease-in-out infinite',
                     filter: 'drop-shadow(0 16px 34px rgba(0,0,0,.6))',
                     pointerEvents: 'none',
@@ -385,7 +390,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                   alt="공주 버튜버"
                   style={{
                     position: 'relative',
-                    height: 'min(34vh, 330px)',
+                    height: 'min(48vh, 470px)',
                     animation: 'bob 6s ease-in-out infinite',
                     filter: 'drop-shadow(0 16px 34px rgba(0,0,0,.6))',
                     pointerEvents: 'none',
@@ -450,6 +455,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                       그대가 공주이옵니다 — 어점(御點)을 하사하소서
                     </div>
                     <MicButton micOn={g.micOn} onClick={() => setG((p) => ({ ...p, micOn: !p.micOn }))} />
+                    <BowButton disabled />
                   </div>
                 )}
               </div>
@@ -501,10 +507,13 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
                     </button>
                   )}
                   {p.isMe && !iAmPrincess && (
-                    <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                      <BowButton onClick={() => { myBowRef.current.action = 'bow'; }} />
+                    </div>
                   )}
                 </div>
-                <ServantFigure glow={p.isMe} delay={p.delay} />
+                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={p.isMe ? myBowRef : undefined} />
                 <div
                   style={{
                     width: 112,
@@ -729,6 +738,30 @@ function Pill({ children }: { children: ReactNode }) {
   );
 }
 
+/** 엎드리기 버튼 — 신하만 활성, 공주는 비활성 */
+function BowButton({ disabled = false, onClick }: { disabled?: boolean; onClick?: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={disabled ? '공주는 엎드리지 않사옵니다' : '공주마마께 큰절을 올리옵니다'}
+      style={{
+        padding: '4px 11px',
+        borderRadius: 999,
+        border: `1px solid ${GOLD(disabled ? 0.18 : 0.45)}`,
+        background: 'rgba(12,5,4,.6)',
+        color: disabled ? 'rgba(240,226,191,.3)' : '#f0e2bf',
+        fontSize: 11,
+        letterSpacing: 1,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        whiteSpace: 'nowrap',
+      }}
+    >
+      🙇 엎드리기
+    </button>
+  );
+}
+
 function MicButton({ micOn, onClick }: { micOn: boolean; onClick: () => void }) {
   return (
     <button
@@ -877,8 +910,9 @@ function Dais({
 }
 
 /** 신하 아바타 — gnome.vrm 전신 렌더 (기존 CSS 실루엣 대체, sway·glow 연출 유지)
+ *  motionRef: 엎드리기 등 모션 트리거 (내 신하에만 연결)
  *  TODO(멀티플레이): 유저별 커스텀 VRM을 쓰게 되면 modelSrc를 플레이어 정보에서 받아온다. */
-function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
+function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: string; motionRef?: AvatarMotionRef }) {
   return (
     <div
       style={{
@@ -894,6 +928,7 @@ function ServantFigure({ glow, delay }: { glow: boolean; delay: string }) {
       <VRMAvatar
         modelSrc="/gnome.vrm"
         frame="full"
+        motionRef={motionRef}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       />
     </div>

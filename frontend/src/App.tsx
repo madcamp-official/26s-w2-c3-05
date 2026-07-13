@@ -38,6 +38,7 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
 }
 
 // 개발 전용: ws API 요청 함수
+// WIP => 소켓 요청 및 기능은 gameSocketClient.ts와 useGameSocket.ts로 분리해야 
 export async function requestWebSocket<T>(endpoint: string, options?: StrictRequestInit): Promise<T> {
   const response = await fetch(`${WS_URL}${endpoint}`, options);
 
@@ -664,12 +665,32 @@ export async function openWebSocket(): Promise<number> {
     headers: HEADER,
   });
   
-  return response;
+  return response
 }
 
 // - - - - - - - - - - - - - - - - - - - -
 // 10. 시스템 · 메타
 // - - - - - - - - - - - - - - - - - - - -
+
+// test required
+export async function getHealth(): Promise<number> {
+  const health = await request<number>(`/health`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return health
+}
+
+// test required
+export async function getVersion(): Promise<string> {
+  const version = await request<string>(`/version`, {
+    method: "GET",
+    headers: HEADER,
+  });
+  
+  return version
+}
 
 
 type Stage =

@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import MusicControl from './pages/MusicControl';
+
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
 import LobbyPage from './pages/LobbyPage';
@@ -703,6 +705,7 @@ export async function getVersion(): Promise<string> {
   return response.data
 }
 
+// Stages and Main App
 
 type Stage =
   | { screen: 'login' }
@@ -759,4 +762,6 @@ export default function App() {
         />
       );
   }
+
+  <MusicControl />
 }

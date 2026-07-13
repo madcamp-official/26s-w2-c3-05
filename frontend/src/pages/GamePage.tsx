@@ -214,7 +214,7 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
 
   const { setMusicSrc } = useAudio();
   useEffect(() => {
-    setMusicSrc('../../public/assets/bgm/bgm_gameplay1.mp3');
+    setMusicSrc('../../assets/bgm/bgm_gameplay1.mp3');
   }, [setMusicSrc]);  
 
   return (

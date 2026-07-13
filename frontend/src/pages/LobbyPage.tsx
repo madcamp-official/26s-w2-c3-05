@@ -18,7 +18,7 @@ export default function LobbyPage({
   const { setMusicSrc } = useAudio();
   useEffect(() => {
       // 홈 페이지에 오면 쾌활한 음악으로 변경
-      setMusicSrc('../../public/assets/bgm/bgm_lobby.mp3');
+      setMusicSrc('../../assets/bgm/bgm_lobby.mp3');
     }, [setMusicSrc]);
 
   return (

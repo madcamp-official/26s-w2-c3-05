@@ -30,12 +30,14 @@ public class UserService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 입궁한 내신입니다.");
         }
 
-        UserInfo user = UserInfo.builder()
+        // save()가 반환한 "관리(managed) 인스턴스"를 이어서 써야 함.
+        // PK를 직접 지정하는 엔티티라 save가 merge로 동작해 원본 변수는 비관리로 남는데,
+        // 그 원본을 Stat에 넣으면 같은 ID 엔티티가 세션에 2개가 되어 NonUniqueObjectException 발생.
+        UserInfo user = userRepository.save(UserInfo.builder()
                 .userId(req.userId())
                 .userPw(passwordEncoder.encode(req.userPw()))
                 .userNickname(req.userNickname())
-                .build();
-        userRepository.save(user);
+                .build());
 
         Stat stat = Stat.builder().user(user).build();
         statRepository.save(stat);
@@ -69,5 +71,15 @@ public class UserService {
         UserInfo user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 내신입니다."));
         user.setUserNickname(nickname); // 더티체킹으로 UPDATE
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isUserIdAvailable(String userId) {
+        return !userRepository.existsById(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isNicknameAvailable(String nickname) {
+        return !userRepository.existsByUserNickname(nickname);
     }
 }

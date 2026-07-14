@@ -19,6 +19,16 @@ const HEADER = {
   "Authorization": "Bearer ${accessToken}"// `Bearer ${accessToken}`
 };
 
+// 매 요청 시점에 localStorage에서 토큰을 읽어 헤더 구성
+// (상수 HEADER는 로그인 "이전" 값이 박제되므로 새 코드는 이 함수를 사용)
+function authHeaders(): Record<string, string> {
+  const token = localStorage.getItem('accessToken');
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+}
+
 type GetRequestInit = Omit<RequestInit, 'method' | 'body'> & {
   method: 'GET' | 'HEAD';
   body?: never;
@@ -38,8 +48,9 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
   if (!response.ok) {
     throw new Error(`네트워크 응답 에러: ${response.statusText}`);
   }
-
-  return response.json() as Promise<T>;
+  // 201/204처럼 본문이 없는 응답 대비
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 // // 개발 전용: ws API 요청 함수
@@ -58,33 +69,24 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
 // 2. 인증 `/auth` - test required
 // - - - - - - - - - - - - - - - - - - - -
 
-// test required
-export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<string> {
-  const response = await request<Record<string, any>>(`/auth/signup`, {
+// 회원가입: 백엔드는 201 + 빈 본문. 성공하면 true
+export async function userSignup(userId: string, userPw: string, userNickname: string): Promise<boolean> {
+  await request<void>(`/auth/signup`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId,  
-      user_pw: userPw,
-      user_nickname: userNickname })
+    headers: authHeaders(),
+    body: JSON.stringify({ userId, userPw, userNickname }),   // camelCase!
   });
-
-  return response.success
+  return true;
 }
 
-// test required 
-// return token
+// 로그인: {accessToken} 이 바로 옴 (data 래핑 없음)
 export async function userLogin(userId: string, userPw: string): Promise<string> {
-  const response = await request<Record<string, any>>(`/auth/login`, {
+  const response = await request<{ accessToken: string }>(`/auth/login`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId,
-      user_pw: userPw
-    })
+    headers: authHeaders(),
+    body: JSON.stringify({ userId, userPw }),
   });
-
-  return response.data.accessToken
+  return response.accessToken;
 }
 
 // test required
@@ -115,24 +117,19 @@ export async function userLogout(userId: string): Promise<boolean> {
   return response.success
 }
 
-// test required
+// 아이디 중복확인: 응답이 boolean 그 자체 (true = 사용 가능)
 export async function checkUserID(userId: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/auth/check-id?userId=${userId}`, {
+  return request<boolean>(`/auth/check-id?userId=${encodeURIComponent(userId)}`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-
-  return response.success
 }
 
-// test acquired
 export async function checkUserNickname(nickname: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/auth/check-nickname?nickname=${nickname}`, {
+  return request<boolean>(`/auth/check-nickname?nickname=${encodeURIComponent(nickname)}`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-
-  return response.success
 }
 
 
@@ -140,14 +137,19 @@ export async function checkUserNickname(nickname: string): Promise<boolean> {
 // 3. 유저 `/users` - WIP
 // - - - - - - - - - - - - - - - - - - - -
 
-// test required
+// 내 정보: 백엔드는 camelCase(MyPageResponse) → 프론트 타입(snake_case)으로 변환
 export async function getUserInfo(): Promise<UserInfo> {
-  const response = await request<Record<string, any>>(`/users/me`, {
+  const d = await request<Record<string, any>>(`/users/me`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-
-  return response.data
+  return {
+    user_id: d.userId,
+    user_pw: '',
+    registered_at: '',
+    user_nickname: d.userNickname,
+    user_profile: '',
+  };
 }
 
 // test required

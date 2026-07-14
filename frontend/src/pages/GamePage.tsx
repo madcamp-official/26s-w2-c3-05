@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import type { ChatMsg, Room, Scores } from '../types/game';
 import { ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
-import { getPlayers } from '../App';
+import { getPlayers, leaveRoom } from '../App';
 import { useGameChannel, type GameEventMsg } from '../features/game/hooks/useGameChannel';
 import { useLaughSender } from '../features/game/hooks/useLaughSender';
 import { getStomp } from '../lib/stompClient';
@@ -38,12 +38,13 @@ const POS = [
   { left: '88%', bottom: '0%', z: 120, sc: 0.95 },
 ];
 
-export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }: {
+export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, onExit }: {
   nick: string;
   room: Room;
   firstEvent: GameEventMsg;   // 대기방에서 받은 1라운드 시작 정보
   onFinish: (scores: Scores) => void;
   onAborted: () => void;      // 인원 부족으로 게임 중단 → 대기화면 복귀
+  onExit: () => void;         // 내가 연회를 파하고 나감 → 로비로
 }) {
   const [g, setG] = useState<GameState>(() => ({
     round: 1,
@@ -895,9 +896,16 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }
             </button>
           </div>
           <button
-            onClick={() => {
+            onClick={async () => {
+              // 서버에 이탈을 알려야 남은 유저 화면에서 내 아바타가 즉시 사라진다
+              // (소켓 leave → 서버가 LEAVE 방송 + 게임 이탈 처리 + 공주였다면 라운드 전환)
               finishedRef.current = true;
-              onFinish(gRef.current.scores);
+              const client = getStomp();
+              if (client?.connected) {
+                client.publish({ destination: `/app/rooms/${room.room_id}/leave` });
+              }
+              await leaveRoom('', room.room_id).catch(() => {});
+              onExit();
             }}
             style={{
               padding: 10,

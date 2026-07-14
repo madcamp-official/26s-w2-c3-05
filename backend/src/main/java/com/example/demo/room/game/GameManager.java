@@ -52,12 +52,19 @@ public class GameManager {
 
     // 한 라운드 시작 (라운드 초과면 게임 종료)
     private synchronized void startRound(GameState s) {
+        startRound(s, false);
+    }
+
+    // randomPrincess=true: 공주 이탈 등으로 이어지는 라운드 — 남은 인원 중 랜덤 간택
+    private synchronized void startRound(GameState s, boolean randomPrincess) {
         s.round++;
         if (s.round > s.totalRounds) {
             endGame(s);
             return;
         }
-        s.princessId = s.players.get((s.round - 1) % s.players.size()); // 공주 순환
+        s.princessId = randomPrincess
+                ? s.players.get(random.nextInt(s.players.size()))
+                : s.players.get((s.round - 1) % s.players.size()); // 평소엔 공주 순환
         s.roundScores.clear();                                          // 라운드별 점수 상한 초기화
         s.awardsThisRound = 0;                                          // 어점 하사 한도 초기화
         List<Topic> topics = topicRepository.findAll();
@@ -136,7 +143,7 @@ public class GameManager {
             s.roundActive = false;
             messaging.convertAndSend("/topic/rooms/" + roomId + "/game",
                     GameEvent.roundEnd(s.round, s.scores));
-            startRound(s); // 다음 공주로 이어서 진행
+            startRound(s, true); // 남은 유저 중 랜덤으로 공주 간택 후 다음 라운드
         }
     }
 

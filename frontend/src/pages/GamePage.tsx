@@ -30,13 +30,7 @@ interface GameState {
   awardsThisRound: number; // 이번 라운드에 공주가 하사한 어점 수 (라운드마다 0으로 리셋)
 }
 
-/** 신하(관객) 배치: 화면 하단에서 옥좌를 향해 도열 */
-const POS = [
-  { left: '12%', bottom: '0%', z: 120, sc: 0.95 },
-  { left: '35%', bottom: '5%', z: 50, sc: 0.84 },
-  { left: '65%', bottom: '5%', z: 50, sc: 0.84 },
-  { left: '88%', bottom: '0%', z: 120, sc: 0.95 },
-];
+// 신하(관객) 배치는 인원수에 따라 동적으로 계산 (servants 계산부 참고)
 
 export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, onExit }: {
   nick: string;
@@ -324,17 +318,25 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   const princessFace = iAmPrincess ? faceParamsRef : (princessId ? remoteFace : null);
   const low = g.secLeft <= 30;
   const mmss = `${Math.floor(Math.max(0, g.secLeft) / 60)}:${String(Math.max(0, g.secLeft) % 60).padStart(2, '0')}`;
-  const servants = allNames
-    .filter((n) => n !== g.princess)
-    .map((n, i) => ({
-      name: n,
-      isMe: n === nick,
-      score: g.scores[n] ?? 0,
-      speaking: !!g.speaking[n] && !(n === nick && !g.micOn),
-      muted: n === nick && !g.micOn,
-      pos: POS[i % POS.length],
-      delay: `${i * 0.9}s`,
-    }));
+  const servantNames = allNames.filter((n) => n !== g.princess);
+  // 인원수 기반 상대 크기: 1명이면 크게, 늘어날수록 하단을 나눠 갖도록 축소
+  // (공주 무대는 화면 중앙~상단이라 bottom 고정이면 겹치지 않음)
+  const SERVANT_SCALES = [1.8, 1.45, 1.2, 1.0];
+  const servantScale = SERVANT_SCALES[Math.min(servantNames.length, SERVANT_SCALES.length) - 1] ?? 0.85;
+  const servants = servantNames.map((n, i, arr) => ({
+    name: n,
+    isMe: n === nick,
+    score: g.scores[n] ?? 0,
+    speaking: !!g.speaking[n] && !(n === nick && !g.micOn),
+    muted: n === nick && !g.micOn,
+    pos: {
+      left: `${((i + 1) / (arr.length + 1)) * 100}%`, // 하단 폭을 인원수로 균등 분할
+      bottom: '0%',
+      z: 100,
+      sc: servantScale,
+    },
+    delay: `${i * 0.9}s`,
+  }));
 
   const { setMusicSrc } = useAudio();
   useEffect(() => {
@@ -612,6 +614,8 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                   left: p.pos.left,
                   bottom: p.pos.bottom,
                   transform: `translate(-50%, 0) translateZ(${p.pos.z}px) scale(${p.pos.sc})`,
+                  transformOrigin: '50% 100%', // 발밑 기준으로 확대 → 커져도 바닥 아래로 안 잘림
+
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',

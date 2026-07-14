@@ -28,12 +28,35 @@ public class RoomService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    // 방 생성: 방 저장 + 방장을 첫 참가자로 입장시킴
+    // 유저를 현재 참여 중인 모든 방에서 떼어낸다 (새 방 생성/입장 전 상태 정리)
+    // 이전 세션이 비정상 종료(새로고침·탭닫기 등)돼 잔류한 참여 기록 때문에
+    // "이미 다른 방에 참여 중" 409로 영영 막히는 문제를 방지한다.
+    private void detachFromAnyRoom(String myId) {
+        for (PlayerInfo p : playerInfoRepository.findAllById_UserId(myId)) {
+            Integer oldRoomId = p.getId().getRoomId();
+            RoomInfo oldRoom = roomRepository.findById(oldRoomId).orElse(null);
+            boolean iAmCreator = oldRoom != null && oldRoom.getCreator().getUserId().equals(myId);
+            if (iAmCreator) {
+                // 내가 방장이던 방은 폐쇄: 참가자 전원 → 방 순서로 명시 삭제
+                // (DB CASCADE에 맡기면 Hibernate flush 순서에 따라 삭제가 묻히는 경우가 있음)
+                playerInfoRepository.deleteAllById_RoomId(oldRoomId);
+                roomRepository.deleteById(oldRoomId);
+            } else {
+                playerInfoRepository.delete(p);
+                if (playerInfoRepository.countById_RoomId(oldRoomId) == 0) {
+                    roomRepository.deleteById(oldRoomId); // 빈 방 정리
+                }
+            }
+        }
+        // 삭제를 즉시 DB에 반영 — 이어지는 INSERT(새 방 생성)와 순서가 꼬이지 않게
+        playerInfoRepository.flush();
+        roomRepository.flush();
+    }
+
+    // 방 생성: 기존 참여 정리 → 방 저장 + 방장을 첫 참가자로 입장시킴
     @Transactional
     public RoomDto createRoom(String myId, RoomCreateRequest req) {
-        if (playerInfoRepository.existsById_UserId(myId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 다른 방에 참여 중입니다.");
-        }
+        detachFromAnyRoom(myId);
         UserInfo me = userRepository.getReferenceById(myId);
 
         RoomInfo room = RoomInfo.builder()
@@ -83,9 +106,7 @@ public class RoomService {
             && (roomPw == null || !passwordEncoder.matches(roomPw, room.getRoomPw()))) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "방 비밀번호가 올바르지 않습니다.");
         }
-        if (playerInfoRepository.existsById_UserId(myId)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "이미 다른 방에 참여 중입니다.");
-        }
+        detachFromAnyRoom(myId); // 다른 방에 잔류 중이면 자동 이탈 후 입장
         long current = playerInfoRepository.countById_RoomId(roomId);
         if (current >= room.getPlayerLimit()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "정원이 가득 찼습니다.");
@@ -118,7 +139,9 @@ public class RoomService {
 
         RoomInfo room = roomRepository.findById(roomId).orElse(null);
         if (room != null && room.getCreator().getUserId().equals(myId)) {
-            roomRepository.delete(room); // 방장 퇴장 = 연회 폐쇄
+            // 방장 퇴장 = 연회 폐쇄 (참가자 → 방 순서로 명시 삭제)
+            playerInfoRepository.deleteAllById_RoomId(roomId);
+            roomRepository.deleteById(roomId);
             return;
         }
 

@@ -11,6 +11,7 @@ import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
 import { SoundControl } from './components/SoundControl';
+import type { GameEventMsg } from './features/game/hooks/useGameChannel';
 import { connectStomp } from './lib/stompClient';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
@@ -292,6 +293,7 @@ export async function getRooms(): Promise<Room[]> {
   
   return list.map((d) => ({
       room_id: d.roomId,
+      creator_id: d.creatorId,
       room_name: d.roomName,
       room_host: d.creatorNickname ?? d.creatorId,
       room_count: d.currentPlayers,
@@ -364,7 +366,7 @@ export async function joinRoom(_userId: string, roomId: number, roomPw?: string)
     body: JSON.stringify({ roomPw }),
   });
   return {
-    room_id: d.roomId, room_name: d.roomName,
+    room_id: d.roomId, creator_id: d.creatorId, room_name: d.roomName,
     room_host: d.creatorNickname ?? d.creatorId,
     room_count: d.currentPlayers, player_limit: d.playerLimit,
     round_limit: d.roundLimit, time_limit: d.timeLimit, can_access: true,
@@ -718,7 +720,7 @@ type Stage =
   | { screen: 'ranking' }
   | { screen: 'create-room' }
   | { screen: 'waiting'; room: Room }
-  | { screen: 'game'; room: Room }
+  | { screen: 'game'; room: Room; firstEvent: GameEventMsg }
   | { screen: 'result'; room: Room; scores: Scores };
 
 export default function App() {
@@ -781,13 +783,15 @@ export default function App() {
             nick={nick}
             room={stage.room}
             onLeave={() => setStage({ screen: 'lobby' })}
-            onStart={() => setStage({ screen: 'game', room: stage.room })}
+            onStart={(first) => setStage({ screen: 'game', room: stage.room, firstEvent: first })}
           />
         );
       case 'game':
         return (
           <GamePage
             nick={nick}
+            room={stage.room}
+            firstEvent={stage.firstEvent}
             onFinish={(scores) => setStage({ screen: 'result', room: stage.room, scores })}
           />
         );

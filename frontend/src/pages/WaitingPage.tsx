@@ -3,6 +3,7 @@ import type { Room } from '../types/game';
 import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 import { getPlayers, leaveRoom } from '../App';
 import { getStomp } from '../lib/stompClient';
+import { useGameChannel, type GameEventMsg } from '../features/game/hooks/useGameChannel';
 
 export default function WaitingPage({
   nick,
@@ -13,10 +14,8 @@ export default function WaitingPage({
   nick: string;
   room: Room;
   onLeave: () => void;
-  onStart: () => void;
+  onStart: (first: GameEventMsg) => void;
 }) {
-  const [meReady, setMeReady] = useState(false);
-  const [botReady, setBotReady] = useState<Record<string, boolean>>({});
   const [starting, setStarting] = useState(false);
   const timers = useRef<number[]>([]);
   const myId = localStorage.getItem('userId') ?? '';
@@ -55,7 +54,20 @@ export default function WaitingPage({
       isMe: p.user_id === myId,
     }));
 
-  const readyCount = slots.filter((s) => s.ready).length;
+  // 방장이 start를 쏘면 서버가 ROUND_START를 방송 → 전원이 동시에 게임 화면으로
+  useGameChannel(room.room_id, (ev) => {
+    if (ev.type === 'ROUND_START') {
+      setStarting(true); // 開宴 도장 연출 잠깐 보여주고 전환
+      timers.current.push(window.setTimeout(() => onStart(ev), 1400));
+    }
+  });
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  const iAmHost = myId === room.creator_id;
+  const startGame = () => {
+    const client = getStomp();
+    if (client?.connected) client.publish({ destination: `/app/rooms/${room.room_id}/start` });
+  };
 
   return (
     <Backdrop
@@ -81,9 +93,9 @@ export default function WaitingPage({
               {room.room_name}
             </div>
             <div style={{ marginTop: 2, color: 'rgba(240,226,191,.72)', fontSize: 14 }}>
-              {readyCount >= slots.length
-                ? '모든 채비가 끝났사옵니다 — 곧 개연(開宴)하옵니다'
-                : `모든 이의 채비를 기다리는 중… (${readyCount}/${slots.length})`}
+              {starting
+                ? '곧 개연(開宴)하옵니다'
+                : `빈객이 드는 중… (${slots.length}/${room.player_limit}명)`}
             </div>
           </div>
         </div>
@@ -150,26 +162,39 @@ export default function WaitingPage({
           ))}
         </div>
         <div style={{ display: 'flex', gap: 14, marginTop: 38 }}>
-          <button onClick={onLeave} style={{ ...ghostBtn, padding: '13px 26px', fontSize: 14, letterSpacing: 2 }}>
-            퇴장
-          </button>
           <button
             onClick={async () => {
+              // 서버에 퇴장 알리고(소켓+REST) 로비로
               const client = getStomp();
               if (client?.connected) client.publish({ destination: `/app/rooms/${room.room_id}/leave` });
               await leaveRoom('', room.room_id).catch(() => {});
               onLeave();
             }}
-            style={{
-              ...primaryBtn,
-              padding: '13px 40px',
-              fontSize: 15,
-              letterSpacing: 3,
-              background: meReady ? 'rgba(12,5,4,.55)' : primaryBtn.background,
-            }}
+            style={{ ...ghostBtn, padding: '13px 26px', fontSize: 14, letterSpacing: 2 }}
           >
-            {meReady ? '준비 취소' : '✓ 준비하기'}
+            퇴장
           </button>
+          {iAmHost ? (
+            <button
+              onClick={startGame}
+              disabled={starting}
+              style={{ ...primaryBtn, padding: '13px 40px', fontSize: 15, letterSpacing: 3 }}
+            >
+              開宴 · 연회를 시작하오
+            </button>
+          ) : (
+            <div
+              style={{
+                padding: '13px 30px',
+                fontSize: 14,
+                letterSpacing: 2,
+                color: 'rgba(240,226,191,.6)',
+                alignSelf: 'center',
+              }}
+            >
+              전주(殿主)의 개연을 기다리는 중…
+            </div>
+          )}
         </div>
       </div>
       {starting && (

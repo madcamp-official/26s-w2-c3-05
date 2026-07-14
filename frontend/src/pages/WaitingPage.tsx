@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Room } from '../types/game';
 import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
+import { getPlayers, leaveRoom } from '../App';
+import { getStomp } from '../lib/stompClient';
 
 export default function WaitingPage({
   nick,
@@ -17,6 +19,8 @@ export default function WaitingPage({
   const [botReady, setBotReady] = useState<Record<string, boolean>>({});
   const [starting, setStarting] = useState(false);
   const timers = useRef<number[]>([]);
+  const myId = localStorage.getItem('userId') ?? '';
+  const [players, setPlayers] = useState<{ user_id: string; nickname: string }[]>([]);
 
   // 명단 새로고침 (입장/퇴장 이벤트마다 재조회 — 단순하고 확실)
     const refresh = () => {
@@ -43,15 +47,6 @@ export default function WaitingPage({
         window.clearInterval(poll);
       };
     }, [room.room_id]);
-
-  // 전원 준비 → 개연
-  useEffect(() => {
-    const allBots = BOTS.every((b) => botReady[b.name]);
-    if (allBots && meReady && !starting) {
-      setStarting(true);
-      timers.current.push(window.setTimeout(onStart, 2000));
-    }
-  }, [botReady, meReady, starting, onStart]);
 
     const slots = players.map((p) => ({
       name: p.nickname,

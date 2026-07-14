@@ -36,7 +36,7 @@ public class RoomService {
         UserInfo me = userRepository.getReferenceById(myId);
 
         RoomInfo room = RoomInfo.builder()
-            .creator(me)
+            .creator(me).roomName(req.roomName())
             .playerLimit(req.playerLimit())
             .roundLimit(req.roundLimit())
             .timeLimit(req.timeLimit())

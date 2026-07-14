@@ -37,6 +37,9 @@ public class RoomInfo {
     @JoinColumn(name = "creator_id", nullable = false)
     private UserInfo creator;
 
+    @Column(name = "room_name", nullable = false, length = 30)
+    private String roomName;
+
     @Column(name = "player_limit")
     private Integer playerLimit;
 

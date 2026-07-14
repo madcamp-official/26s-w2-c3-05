@@ -5,7 +5,9 @@ import com.example.demo.room.entity.RoomInfo;
 // 방 목록/상세 응답 한 줄
 public record RoomDto(
     Integer roomId,
+    String roomName,
     String creatorId,
+    String creatorNickname,   // 프론트 '전주(殿主)' 표시용
     Integer playerLimit,
     Integer roundLimit,
     Integer timeLimit,
@@ -14,13 +16,15 @@ public record RoomDto(
 ) {
     public static RoomDto of(RoomInfo room, long currentPlayers) {
         return new RoomDto(
-            room.getRoomId(),
-            room.getCreator().getUserId(),
-            room.getPlayerLimit(),
-            room.getRoundLimit(),
-            room.getTimeLimit(),
-            room.getRoomPw() != null,
-            currentPlayers
+                room.getRoomId(),
+                room.getRoomName(),
+                room.getCreator().getUserId(),
+                room.getCreator().getUserNickname(),  // LAZY지만 @Transactional 안이라 안전
+                room.getPlayerLimit(),
+                room.getRoundLimit(),
+                room.getTimeLimit(),
+                room.getRoomPw() != null,
+                currentPlayers
         );
     }
 }

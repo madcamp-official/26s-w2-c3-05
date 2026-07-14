@@ -1,8 +1,8 @@
 import type { Room } from '../types/game';
-import { ROOMS } from '../constants/game';
 import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getRooms } from '../App';
 import { useAudio } from '../components/AudioContext';
 
 export default function LobbyPage({
@@ -22,9 +22,11 @@ export default function LobbyPage({
 }) {
 
   const { setMusicSrc } = useAudio();
-  useEffect(() => {
-      setMusicSrc('../../assets/bgm/bgm_lobby.mp3');
-    }, [setMusicSrc]);
+    const [rooms, setRooms] = useState<Room[]>([]);
+
+    useEffect(() => {
+      getRooms().then(setRooms).catch(() => setRooms([]));
+    }, []);
 
   return (
     <Backdrop
@@ -74,7 +76,7 @@ export default function LobbyPage({
         </div>
         <Divider margin="26px 0 30px" />
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: 22 }}>
-          {ROOMS.map((r) => (
+          {rooms.map((r) => (
             <RoomCard key={r.room_id} room={r} onJoin={() => onJoin(r)} />
           ))}
         </div>

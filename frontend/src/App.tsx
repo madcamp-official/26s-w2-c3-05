@@ -282,35 +282,36 @@ export async function getRankings(page: number, size: number): Promise<Stat[]> {
 // - - - - - - - - - - - - - - - - - - - -
 // 4. 방 로비 `/rooms`
 // - - - - - - - - - - - - - - - - - - - -
-// test required 
-export async function getRooms(page: number, size: number, open: boolean): Promise<Room[]> {
-  const response = await request<Record<string, any>>(`/rooms?page=${page}&size=${size}&open=${open}`, {
+// 방 목록: 백엔드 RoomDto(camelCase) → 프론트 Room(snake_case) 변환
+export async function getRooms(): Promise<Room[]> {
+  const list = await request<Record<string, any>[]>(`/rooms`, {
     method: "GET",
-    headers: HEADER,
+    headers: authHeaders(),
   });
   
-  return response.data
-}
+  return list.map((d) => ({
+      room_id: d.roomId,
+      room_name: d.roomName,
+      room_host: d.creatorNickname ?? d.creatorId,
+      room_count: d.currentPlayers,
+      player_limit: d.playerLimit,
+      round_limit: d.roundLimit,
+      time_limit: d.timeLimit,
+      can_access: true,            // 목록엔 입장 가능한 방만 옴
+    }));
+  }
 
-// test required
-export async function createRoom(userId: string, roomName: string, userNickname: string, playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string): Promise<number> {
-  const response = await request<Record<string, any>>(`/rooms`, {
+// 방 생성: 생성자는 JWT로 서버가 알아냄 → 방 정보만 보냄. roomId 반환
+export async function createRoom(
+  _userId: string, roomName: string, _userNickname: string,
+  playerLimit: number, roundLimit: number, timeLimit: number, roomPw?: string
+): Promise<number> {
+  const d = await request<Record<string, any>>(`/rooms`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      creator_id: userId,  
-      room_name: roomName,
-      room_host: userNickname, 
-      room_count: 1,
-      player_limit: playerLimit,
-      round_limit: roundLimit,
-      time_limit: timeLimit,
-      room_pw: roomPw,
-      can_access: true
-    })
+    headers: authHeaders(),
+    body: JSON.stringify({ roomName, playerLimit, roundLimit, timeLimit, roomPw }),
   });
-  
-  return response.success
+  return d.roomId;
 }
 
 // test required
@@ -354,33 +355,29 @@ export async function deleteRoom(roomId: number): Promise<boolean> {
   return response.success
 }
 
-// test required
-export async function joinRoom(userId: string, roomId: number): Promise<PlayerInfo> {
-  const response = await request<Record<string, any>>(`/rooms/${roomId}/join`, {
+// 방 입장 (비밀방이면 roomPw 전달)
+export async function joinRoom(_userId: string, roomId: number, roomPw?: string): Promise<Room> {
+  const d = await request<Record<string, any>>(`/rooms/${roomId}/join`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
-      room_id: roomId
-    })
+    headers: authHeaders(),
+    body: JSON.stringify({ roomPw }),
   });
-  
-  return response.data
+  return {
+    room_id: d.roomId, room_name: d.roomName,
+    room_host: d.creatorNickname ?? d.creatorId,
+    room_count: d.currentPlayers, player_limit: d.playerLimit,
+    round_limit: d.roundLimit, time_limit: d.timeLimit, can_access: true,
+  } as Room;
 }
 
-// test required
-export async function leaveRoom(userId: string, roomId: number): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/rooms/${roomId}/leave`, {
-    method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
-      room_id: roomId
-    })
+// 방 나가기 (DELETE + body 없음 — 백엔드 계약)
+export async function leaveRoom(_userId: string, roomId: number): Promise<void> {
+  await request<void>(`/rooms/${roomId}/leave`, {
+    method: "DELETE",
+    headers: authHeaders(),
   });
-  
-  return response.data
 }
+
 
 // test required
 export async function getPlayers(roomId: number): Promise<PlayerInfo[]> {

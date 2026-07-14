@@ -133,15 +133,20 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }
   const pushChat = (msg: ChatMsg) =>
     setG((prev) => ({ ...prev, chat: [...prev.chat, msg].slice(-80) }));
 
+  const nickToId = (name: string) =>
+    Object.keys(playersRef.current).find((id) => playersRef.current[id] === name);
+
+  // 어점 하사: 서버로 보내기만 한다 — 점수·한도 검증·방송은 서버가 담당하고
+  // 모두가 AWARD 이벤트로 동일하게 반영받는다 (예전엔 로컬 전용이라 남에게 안 보였음)
   const award = (target: string) => {
-    // 라운드당 어점 한도 초과 시 무시 (공주·봇 공통)
     if (gRef.current.awardsThisRound >= AWARDS_PER_ROUND) return;
-    setG((prev) => ({
-      ...prev,
-      scores: { ...prev.scores, [target]: (prev.scores[target] ?? 0) + 1 },
-      awardsThisRound: prev.awardsThisRound + 1,
-    }));
-    pushChat({ kind: 'system', text: `공주께서 ${target} 님에게 어점(御點)을 하사하셨사옵니다 ✦` });
+    const targetId = nickToId(target);
+    const client = getStomp();
+    if (!targetId || !client?.connected) return;
+    client.publish({
+      destination: `/app/rooms/${room.room_id}/award`,
+      body: JSON.stringify({ targetId }),
+    });
   };
 
   // 서버 게임 이벤트 → 로컬 상태 반영 (라운드 전환·점수·종료는 전부 서버가 결정)
@@ -164,6 +169,17 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }
     } else if (ev.type === 'LAUGH') {
       setG((prev) => ({ ...prev, scores: scoresToNick(ev.scores) }));
       pushChat({ kind: 'system', text: '공주께서 웃음을 터뜨리셨사옵니다! 하인들에게 어점이 내려졌사옵니다 ✦' });
+    } else if (ev.type === 'AWARD') {
+      // 어점 하사: 전원 동일하게 점수 갱신 + 시스템 메시지
+      setG((prev) => ({
+        ...prev,
+        scores: scoresToNick(ev.scores),
+        awardsThisRound: prev.awardsThisRound + 1,
+      }));
+      pushChat({
+        kind: 'system',
+        text: `공주께서 ${idToNick(ev.targetId)} 님에게 어점(御點)을 하사하셨사옵니다 ✦`,
+      });
     } else if (ev.type === 'ROUND_END') {
       setG((prev) => ({ ...prev, interstitial: true, secLeft: 0, scores: scoresToNick(ev.scores) }));
     } else if (ev.type === 'GAME_END') {
@@ -858,6 +874,9 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
+                // 한글 IME 조합 중의 Enter는 무시 — 조합 확정 Enter가 핸들러를 한 번 더
+                // 발화시켜 마지막 글자("안녕"→"녕")가 별도 메시지로 전송되는 버그 방지
+                if (e.nativeEvent.isComposing) return;
                 if (e.key === 'Enter') sendChat();
               }}
               placeholder="말을 아뢰시오…"

@@ -36,6 +36,7 @@ public class GameManager {
     private static final int TOTAL_ROUNDS = 4;          // 총 4라운드
     private static final int ROUND_DURATION_SEC = 180;  // 라운드당 3분 (웃어도 끝까지 진행)
     private static final int MAX_SCORE_PER_ROUND = 5;   // 하인 1명이 한 라운드에 얻을 수 있는 최대 점수
+    private static final int AWARDS_PER_ROUND = 5;      // 공주가 한 라운드에 하사할 수 있는 어점 총량
 
     // 게임 시작 (방장이 소켓으로 호출)
     public void startGame(Integer roomId, String requesterId) {
@@ -58,6 +59,7 @@ public class GameManager {
         }
         s.princessId = s.players.get((s.round - 1) % s.players.size()); // 공주 순환
         s.roundScores.clear();                                          // 라운드별 점수 상한 초기화
+        s.awardsThisRound = 0;                                          // 어점 하사 한도 초기화
         List<Topic> topics = topicRepository.findAll();
         Topic topic = topics.get(random.nextInt(topics.size()));       // 랜덤 주제
         s.roundActive = true;
@@ -97,6 +99,21 @@ public class GameManager {
         messaging.convertAndSend("/topic/rooms/" + roomId + "/game",
                 GameEvent.roundEnd(s.round, s.scores));
         startRound(s);
+    }
+
+    // 공주가 하인에게 어점(御點) 하사 — 검증·점수·방송 모두 서버가 담당
+    public synchronized void handleAward(Integer roomId, String senderId, String targetId) {
+        GameState s = games.get(roomId);
+        if (s == null || !s.roundActive) return;
+        if (!senderId.equals(s.princessId)) return;          // 공주만 하사 가능
+        if (targetId == null || !s.players.contains(targetId) || targetId.equals(s.princessId)) return;
+        if (s.awardsThisRound >= AWARDS_PER_ROUND) return;   // 라운드당 한도
+
+        s.awardsThisRound++;
+        s.scores.merge(targetId, 1, Integer::sum);
+
+        messaging.convertAndSend("/topic/rooms/" + roomId + "/game",
+                GameEvent.award(s.round, s.scores, targetId));
     }
 
     // 게임 중 이탈 처리 (명시적 leave·소켓 끊김 공통)

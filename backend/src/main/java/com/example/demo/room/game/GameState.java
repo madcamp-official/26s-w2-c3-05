@@ -16,6 +16,7 @@ public class GameState {
     public final int timeLimitSec;
     public final Map<String, Integer> scores = new HashMap<>();
     public final Map<String, Integer> roundScores = new HashMap<>(); // 이번 라운드 하인별 획득(라운드당 상한 3점 체크용)
+    public int awardsThisRound = 0;      // 이번 라운드에 공주가 하사한 어점 수
 
     public int round = 0;
     public String princessId;            // 이번 라운드의 공주 (웃음 대상)

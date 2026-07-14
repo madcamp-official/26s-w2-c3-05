@@ -34,6 +34,7 @@ CREATE TABLE topic (
 CREATE TABLE room_info (
                            room_id       INT         NOT NULL GENERATED ALWAYS AS IDENTITY,
                            creator_id    VARCHAR(16) NOT NULL,
+                           room_name	VARCHAR(30)	NOT NULL	DEFAULT '이름 없는 연회',
                            player_limit  INT,
                            round_limit   INT,
                            time_limit    INT,

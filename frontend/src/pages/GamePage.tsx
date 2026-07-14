@@ -74,15 +74,16 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
     return motionRefs.current[name];
   };
 
-  // 절할 때 뜨는 '소인 죽을죄를…' 말풍선 — 유저별 표시 상태
-  const [bowingWho, setBowingWho] = useState<Record<string, boolean>>({});
+  // 절할 때 뜨는 말풍선 — 유저별 "표시할 문구" (null이면 숨김)
+  // 직접 조아리기: "소인 죽여주시옵소서" / 어점 받았을 때: "소인 망극하옵니다"
+  const [bowingWho, setBowingWho] = useState<Record<string, string | null>>({});
   const bowTimers = useRef<Record<string, number>>({});
-  const playBow = (name: string) => {
-    motionRefFor(name).current.action = 'bow';        // 아바타 모션
-    setBowingWho((prev) => ({ ...prev, [name]: true })); // 말풍선
+  const playBow = (name: string, text = '소인 죽여주시옵소서...!!!') => {
+    motionRefFor(name).current.action = 'bow';         // 아바타 모션 (공통)
+    setBowingWho((prev) => ({ ...prev, [name]: text })); // 상황별 말풍선 문구
     window.clearTimeout(bowTimers.current[name]);
     bowTimers.current[name] = window.setTimeout(
-      () => setBowingWho((prev) => ({ ...prev, [name]: false })), 2000);
+      () => setBowingWho((prev) => ({ ...prev, [name]: null })), 2000);
   };
   useEffect(() => () => Object.values(bowTimers.current).forEach(clearTimeout), []);
 
@@ -178,6 +179,9 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
         kind: 'system',
         text: `공주께서 ${idToNick(ev.targetId)} 님에게 어점(御點)을 하사하셨사옵니다 ✦`,
       });
+      // 어점 받은 신하가 감읍하며 조아림 — AWARD는 방 전원에게 방송되므로
+      // 모든 유저 화면에서 동일하게 모션+말풍선이 재생된다
+      playBow(idToNick(ev.targetId), '소인 망극하옵니다...!!!');
     } else if (ev.type === 'ROUND_END') {
       setG((prev) => ({ ...prev, interstitial: true, secLeft: 0, scores: scoresToNick(ev.scores) }));
     } else if (ev.type === 'GAME_END') {
@@ -661,7 +665,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                         boxShadow: `inset 0 0 0 2px rgba(18,8,6,.5), inset 0 0 0 3px ${GOLD(0.18)}, 0 8px 20px rgba(0,0,0,.55)`,
                       }}
                     >
-                      소인 죽여주시옵소서...!!!
+                      {bowingWho[p.name]}
                       <div
                         style={{
                           position: 'absolute',

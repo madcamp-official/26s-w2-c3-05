@@ -104,7 +104,7 @@ export default function CreateRoomPage({
 
         <Divider margin="24px 0 26px" />
 
-        <div style={{ ...panel, padding: '30px 30px 28px', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ ...panel, padding: '30px 30px 28px', boxSizing: 'border-box', display: 'flex', flexDirection: 'column' }}>
           <label htmlFor="room-name" style={{ color: GOLD(0.85), fontSize: 12.5, letterSpacing: 2, marginBottom: 8 }}>
             연회 이름
           </label>

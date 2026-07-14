@@ -2,6 +2,7 @@ package com.example.demo.room.controller;
 
 import com.example.demo.room.dto.ChatBroadcast;
 import com.example.demo.room.dto.FaceBroadcast;
+import com.example.demo.room.dto.MotionBroadcast;
 import com.example.demo.room.dto.RoomEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -27,7 +28,17 @@ public class RoomSocketController {
     @MessageMapping("/rooms/{roomId}/leave")
     @SendTo("/topic/rooms/{roomId}")
     public RoomEvent leave(@DestinationVariable Integer roomId, Principal principal) {
+        gameManager.handlePlayerLeave(roomId, principal.getName()); // 게임 중이면 이탈 처리
         return RoomEvent.leave(principal.getName());
+    }
+
+    // 아바타 모션(조아리기 등) 중계: /app/rooms/3/motion {action} → /topic/rooms/3/motion
+    @MessageMapping("/rooms/{roomId}/motion")
+    @SendTo("/topic/rooms/{roomId}/motion")
+    public MotionBroadcast motion(@DestinationVariable Integer roomId,
+                                  MotionBroadcast.MotionPayload payload,
+                                  Principal principal) {
+        return new MotionBroadcast(principal.getName(), payload.action());
     }
 
     // 의도: REST로 방에 join한 뒤, 클라이언트가 소켓으로

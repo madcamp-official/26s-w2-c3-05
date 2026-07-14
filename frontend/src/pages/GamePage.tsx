@@ -38,11 +38,12 @@ const POS = [
   { left: '88%', bottom: '0%', z: 120, sc: 0.95 },
 ];
 
-export default function GamePage({ nick, room, firstEvent, onFinish }: {
+export default function GamePage({ nick, room, firstEvent, onFinish, onAborted }: {
   nick: string;
   room: Room;
   firstEvent: GameEventMsg;   // 대기방에서 받은 1라운드 시작 정보
   onFinish: (scores: Scores) => void;
+  onAborted: () => void;      // 인원 부족으로 게임 중단 → 대기화면 복귀
 }) {
   const [g, setG] = useState<GameState>(() => ({
     round: 1,
@@ -68,21 +69,36 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
   // 얼굴 트래킹: 로컬 사용자의 웹캠 → faceParamsRef → VRM 아바타(표정·머리회전)
   const faceParamsRef = useRef<FaceParams>(initialFaceParams);
 
-  // 엎드리기 모션 트리거: 버튼 → myBowRef → 내 신하 아바타 렌더 루프
-  // TODO(멀티플레이): 서버 중계로 다른 유저의 엎드리기도 각자의 motionRef에 매핑한다.
-  const myBowRef = useRef<AvatarMotion>({ action: null });
-
-  // 절할 때 뜨는 대사 말풍선 노출 상태 (내 신하 기준)
-  const [bowSpeaking, setBowSpeaking] = useState(false);
-  const bowSpeechTimer = useRef<number | undefined>(undefined);
-  // 엎드리기: 아바타 모션 + '소인 죽을죄를…' 말풍선을 함께 띄운다
-  const triggerBow = () => {
-    myBowRef.current.action = 'bow';
-    setBowSpeaking(true);
-    window.clearTimeout(bowSpeechTimer.current);
-    bowSpeechTimer.current = window.setTimeout(() => setBowSpeaking(false), 2000);
+  // 유저별 모션 상자: 이름 → AvatarMotionRef (내 것/남의 것 동일 경로로 구동)
+  const motionRefs = useRef<Record<string, AvatarMotionRef>>({});
+  const motionRefFor = (name: string): AvatarMotionRef => {
+    if (!motionRefs.current[name]) motionRefs.current[name] = { current: { action: null } };
+    return motionRefs.current[name];
   };
-  useEffect(() => () => window.clearTimeout(bowSpeechTimer.current), []);
+
+  // 절할 때 뜨는 '소인 죽을죄를…' 말풍선 — 유저별 표시 상태
+  const [bowingWho, setBowingWho] = useState<Record<string, boolean>>({});
+  const bowTimers = useRef<Record<string, number>>({});
+  const playBow = (name: string) => {
+    motionRefFor(name).current.action = 'bow';        // 아바타 모션
+    setBowingWho((prev) => ({ ...prev, [name]: true })); // 말풍선
+    window.clearTimeout(bowTimers.current[name]);
+    bowTimers.current[name] = window.setTimeout(
+      () => setBowingWho((prev) => ({ ...prev, [name]: false })), 2000);
+  };
+  useEffect(() => () => Object.values(bowTimers.current).forEach(clearTimeout), []);
+
+  // 엎드리기 버튼: 내 화면에서 재생 + 같은 방 전원에게 중계
+  const triggerBow = () => {
+    playBow(nick);
+    const client = getStomp();
+    if (client?.connected) {
+      client.publish({
+        destination: `/app/rooms/${room.room_id}/motion`,
+        body: JSON.stringify({ action: 'bow' }),
+      });
+    }
+  };
 
   // 서버 이벤트는 userId 기준, UI는 닉네임 기준 → 경계에서 변환한다
   const playersRef = useRef<Record<string, string>>({}); // userId → nickname
@@ -90,16 +106,27 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
   const allNamesRef = useRef(allNames);
   allNamesRef.current = allNames;
 
-  useEffect(() => {
+  const loadPlayers = () => {
     getPlayers(room.room_id)
       .then((list) => {
         playersRef.current = Object.fromEntries(list.map((p) => [p.user_id, p.nickname]));
         setAllNames(list.map((p) => p.nickname));
       })
       .catch(() => {});
-  }, [room.room_id]);
+  };
+  useEffect(loadPlayers, [room.room_id]);
 
   const idToNick = (id?: string) => (id && playersRef.current[id]) || id || '';
+
+  // 공주 닉네임 재동기화: 1라운드 시작 이벤트가 명단 로딩보다 먼저 오면
+  // idToNick이 userId를 그대로 반환해 "공주가 신하 목록에도 보이는" 문제가 생긴다.
+  // 명단이 채워진 뒤 princessId 기준으로 닉네임을 다시 계산해 바로잡는다.
+  useEffect(() => {
+    if (princessId) {
+      setG((prev) => ({ ...prev, princess: idToNick(princessId) }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allNames, princessId]);
   const scoresToNick = (s?: Record<string, number>): Scores =>
     Object.fromEntries(Object.entries(s ?? {}).map(([id, v]) => [idToNick(id), v]));
 
@@ -143,6 +170,12 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
       if (!finishedRef.current) {
         finishedRef.current = true;
         onFinish(scoresToNick(ev.scores));
+      }
+    } else if (ev.type === 'GAME_ABORT') {
+      // 인원 부족(1명 잔류) → 서버가 게임 중단 + 방 잠금 해제 → 대기화면 복귀
+      if (!finishedRef.current) {
+        finishedRef.current = true;
+        onAborted();
       }
     }
   };
@@ -205,27 +238,50 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
     setDraft('');
   };
 
-  // 게임 채팅 수신: 남이 보낸 것만 추가 (내 것은 전송 시 이미 찍음)
+  // 게임 중 실시간 수신: 채팅 / 모션(조아리기) / 입퇴장
   useEffect(() => {
     const myId = sessionStorage.getItem('userId') ?? '';
-    let sub: StompSubscription | undefined;
+    const subs: StompSubscription[] = [];
     let retry: number | undefined;
+
     const trySub = () => {
       const client = getStomp();
-      if (client?.connected) {
-        sub = client.subscribe(`/topic/rooms/${room.room_id}/chat`, (msg) => {
-          const d = JSON.parse(msg.body) as { userId: string; text: string };
-          if (d.userId === myId) return;
-          const who = idToNick(d.userId);
-          pushChat({ kind: 'other', who, text: d.text, crown: who === gRef.current.princess });
-        });
-      } else {
+      if (!client?.connected) {
         retry = window.setTimeout(trySub, 500);
+        return;
       }
+
+      // 채팅: 남이 보낸 것만 추가 (내 것은 전송 시 이미 찍음)
+      subs.push(client.subscribe(`/topic/rooms/${room.room_id}/chat`, (msg) => {
+        const d = JSON.parse(msg.body) as { userId: string; text: string };
+        if (d.userId === myId) return;
+        const who = idToNick(d.userId);
+        pushChat({ kind: 'other', who, text: d.text, crown: who === gRef.current.princess });
+      }));
+
+      // 모션: 다른 유저의 조아리기를 그 유저 아바타에서 재생
+      subs.push(client.subscribe(`/topic/rooms/${room.room_id}/motion`, (msg) => {
+        const d = JSON.parse(msg.body) as { userId: string; action: string };
+        if (d.userId === myId || d.action !== 'bow') return;
+        playBow(idToNick(d.userId));
+      }));
+
+      // 입퇴장: 나간 유저의 아바타 즉시 제거 / 들어오면 명단 재조회
+      subs.push(client.subscribe(`/topic/rooms/${room.room_id}`, (msg) => {
+        const d = JSON.parse(msg.body) as { type: string; userId: string };
+        if (d.type === 'LEAVE') {
+          const gone = idToNick(d.userId);
+          setAllNames((prev) => prev.filter((n) => n !== gone));
+          pushChat({ kind: 'system', text: `${gone} 님이 연회장을 떠나셨사옵니다` });
+        } else if (d.type === 'ENTER') {
+          loadPlayers();
+        }
+      }));
     };
     trySub();
+
     return () => {
-      sub?.unsubscribe();
+      subs.forEach((s) => s.unsubscribe());
       window.clearTimeout(retry);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -547,7 +603,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
               >
                 {/* 절할 때 뜨는 대사 말풍선 (현재는 내 신하만 절 가능 → p.isMe)
                     TODO(멀티플레이): 원격 신하 절 이벤트도 각자 말풍선으로 표시 */}
-                {p.isMe && bowSpeaking && (
+                {bowingWho[p.name] && (
                   <div
                     style={{
                       position: 'absolute',
@@ -639,7 +695,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
                     </div>
                   )}
                 </div>
-                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={p.isMe ? myBowRef : undefined} />
+                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={motionRefFor(p.name)} />
                 <div
                   style={{
                     width: 112,

@@ -845,6 +845,7 @@ export default function App() {
             room={stage.room}
             firstEvent={stage.firstEvent}
             onFinish={(scores) => setStage({ screen: 'result', room: stage.room, scores })}
+            onAborted={() => setStage({ screen: 'waiting', room: stage.room })}
           />
         );
       case 'result':

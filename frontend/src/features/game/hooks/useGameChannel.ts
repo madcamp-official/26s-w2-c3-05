@@ -4,7 +4,7 @@ import { getStomp } from '../../../lib/stompClient';
 
 // 서버 GameEvent 페이로드 (backend GameEvent.java와 1:1)
 export interface GameEventMsg {
-  type: 'ROUND_START' | 'LAUGH' | 'ROUND_END' | 'GAME_END';
+  type: 'ROUND_START' | 'LAUGH' | 'ROUND_END' | 'GAME_END' | 'GAME_ABORT';
   round?: number;
   princessId?: string;
   topicId?: number;

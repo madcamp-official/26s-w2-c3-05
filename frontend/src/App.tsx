@@ -11,6 +11,7 @@ import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
 import { SoundControl } from './components/SoundControl';
+import { connectStomp } from './lib/stompClient';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8080';
 
@@ -379,14 +380,13 @@ export async function leaveRoom(_userId: string, roomId: number): Promise<void> 
 }
 
 
-// test required
-export async function getPlayers(roomId: number): Promise<PlayerInfo[]> {
-  const response = await request<Record<string, any>>(`/rooms/${roomId}/players`, {
+// 방 참가자 목록
+export async function getPlayers(roomId: number): Promise<{ user_id: string; nickname: string }[]> {
+  const list = await request<Record<string, any>[]>(`/rooms/${roomId}/players`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return list.map((d) => ({ user_id: d.userId, nickname: d.nickname }));
 }
 
 // test required
@@ -734,6 +734,7 @@ export default function App() {
           <LoginPage
             onEnter={(id, name) => {
               setUserId(id);
+              connectStomp(localStorage.getItem('accessToken') ?? ''); // 추가
               setNick(name);
               setStage({ screen: 'lobby' });
             }}
@@ -768,7 +769,10 @@ export default function App() {
             userId={userId}
             nickname={nick}
             onCancel={() => setStage({ screen: 'lobby' })}
-            onCreated={() => setStage({ screen: 'lobby' })}
+            onCreated={async (roomId) => {
+              const room = await joinRoom('', roomId);   // 재입장 허용이라 방장도 안전 (방 정보 획득용)
+              setStage({ screen: 'waiting', room });
+            }}
           />
         );
       case 'waiting':

@@ -1,5 +1,6 @@
 package com.example.demo.room.controller;
 
+import com.example.demo.room.dto.PlayerDto;
 import com.example.demo.room.dto.RoomCreateRequest;
 import com.example.demo.room.dto.RoomDto;
 import com.example.demo.room.dto.RoomJoinRequest;
@@ -47,6 +48,12 @@ public class RoomController {
                                         @RequestBody(required = false) RoomJoinRequest req) {
         String pw = req != null ? req.roomPw() : null;
         return ResponseEntity.ok(roomService.joinRoom(auth.getName(), roomId, pw));
+    }
+
+    // 방 참가자 목록
+    @GetMapping("/{roomId}/players")
+    public ResponseEntity<List<PlayerDto>> players(@PathVariable Integer roomId) {
+        return ResponseEntity.ok(roomService.getPlayers(roomId));
     }
 
     // 방 나가기

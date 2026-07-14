@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Room } from '../types/game';
-import { BOTS } from '../constants/game';
 import { Divider, Seal, Backdrop, GOLD, primaryBtn, ghostBtn } from '../components/ui';
 
 export default function WaitingPage({
@@ -19,17 +18,31 @@ export default function WaitingPage({
   const [starting, setStarting] = useState(false);
   const timers = useRef<number[]>([]);
 
-  // 봇들이 순차적으로 준비 완료
-  useEffect(() => {
-    BOTS.forEach((b, i) => {
-      timers.current.push(
-        window.setTimeout(() => {
-          setBotReady((prev) => ({ ...prev, [b.name]: true }));
-        }, 1600 + i * 1300 + Math.random() * 900),
-      );
-    });
-    return () => timers.current.forEach(clearTimeout);
-  }, []);
+  // 명단 새로고침 (입장/퇴장 이벤트마다 재조회 — 단순하고 확실)
+    const refresh = () => {
+      getPlayers(room.room_id).then(setPlayers).catch(() => {});
+    };
+
+    useEffect(() => {
+      refresh();
+
+      // 소켓: 이 방 채널 구독 + 내 입장 알림
+      const client = getStomp();
+      let subId: string | null = null;
+      if (client?.connected) {
+        const sub = client.subscribe(`/topic/rooms/${room.room_id}`, () => refresh());
+        subId = sub.id;
+        client.publish({ destination: `/app/rooms/${room.room_id}/enter` });
+      }
+
+      // 연결이 늦거나 이벤트를 놓쳐도 5초마다 동기화 (보험)
+      const poll = window.setInterval(refresh, 5000);
+
+      return () => {
+        if (subId && client?.connected) client.unsubscribe(subId);
+        window.clearInterval(poll);
+      };
+    }, [room.room_id]);
 
   // 전원 준비 → 개연
   useEffect(() => {
@@ -40,10 +53,13 @@ export default function WaitingPage({
     }
   }, [botReady, meReady, starting, onStart]);
 
-  const slots = [
-    { name: nick, title: '귀비(貴妃)', ready: meReady, isMe: true },
-    ...BOTS.map((b) => ({ name: b.name, title: b.title, ready: !!botReady[b.name], isMe: false })),
-  ];
+    const slots = players.map((p) => ({
+      name: p.nickname,
+      title: p.user_id === room.room_host ? '전주(殿主)' : '빈객(賓客)',
+      ready: true,                    // ready 시스템은 게임시작 단계에서
+      isMe: p.user_id === myId,
+    }));
+
   const readyCount = slots.filter((s) => s.ready).length;
 
   return (
@@ -143,7 +159,12 @@ export default function WaitingPage({
             퇴장
           </button>
           <button
-            onClick={() => setMeReady((v) => !v)}
+            onClick={async () => {
+              const client = getStomp();
+              if (client?.connected) client.publish({ destination: `/app/rooms/${room.room_id}/leave` });
+              await leaveRoom('', room.room_id).catch(() => {});
+              onLeave();
+            }}
             style={{
               ...primaryBtn,
               padding: '13px 40px',

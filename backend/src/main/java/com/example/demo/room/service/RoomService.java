@@ -1,5 +1,6 @@
 package com.example.demo.room.service;
 
+import com.example.demo.room.dto.PlayerDto;
 import com.example.demo.room.dto.RoomCreateRequest;
 import com.example.demo.room.dto.RoomDto;
 import com.example.demo.room.entity.PlayerInfo;
@@ -70,6 +71,11 @@ public class RoomService {
         RoomInfo room = roomRepository.findById(roomId)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "존재하지 않는 방입니다."));
 
+        // 이미 이 방에 있으면 그대로 통과 (방장 자동입장 후 재클릭, 새로고침 대비)
+        if (playerInfoRepository.existsById(new PlayerInfoId(myId, roomId))) {
+            return RoomDto.of(room, playerInfoRepository.countById_RoomId(roomId));
+        }
+
         if (!room.isCanAccess()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "입장할 수 없는 방입니다."); // 게임 중 등
         }
@@ -93,6 +99,14 @@ public class RoomService {
             .build());
 
         return RoomDto.of(room, current + 1);
+    }
+
+    // 방 참가자 목록 (대기방 명단)
+    @Transactional(readOnly = true)
+    public List<PlayerDto> getPlayers(Integer roomId) {
+        return playerInfoRepository.findAllById_RoomId(roomId).stream()
+                .map(p -> new PlayerDto(p.getUser().getUserId(), p.getUser().getUserNickname()))
+                .toList();
     }
 
     // 방 나가기: 내 참가 기록 삭제, 방이 비면 방도 삭제

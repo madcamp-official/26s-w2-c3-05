@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
@@ -17,6 +18,7 @@ import java.security.Principal;
 public class RoomSocketController {
 
     private final com.example.demo.room.game.GameManager gameManager;
+    private final SimpMessagingTemplate messaging;
 
     // 클라가 /app/rooms/3/enter 로 보내면 → /topic/rooms/3 구독자 전원에게 방송
     @MessageMapping("/rooms/{roomId}/enter")
@@ -76,6 +78,33 @@ public class RoomSocketController {
     @MessageMapping("/rooms/{roomId}/laugh")
     public void laugh(@DestinationVariable Integer roomId, Principal principal) {
         gameManager.handleLaugh(roomId, principal.getName());
+    }
+
+    // ── 음성 채팅 (WebRTC) ─────────────────────────────────────────
+    // 시그널(offer/answer/ice) 릴레이: 서버는 보낸이(from)만 보증하는 순수 중계.
+    // 음성 데이터 자체는 P2P(WebRTC)로 흘러 서버를 거치지 않는다.
+    public record RtcSignalIn(String to, String type, String payload) {}
+    public record RtcSignalOut(String from, String to, String type, String payload) {}
+
+    @MessageMapping("/rooms/{roomId}/rtc")
+    @SendTo("/topic/rooms/{roomId}/rtc")
+    public RtcSignalOut rtc(@DestinationVariable Integer roomId,
+                            RtcSignalIn p,
+                            Principal principal) {
+        return new RtcSignalOut(principal.getName(), p.to(), p.type(), p.payload());
+    }
+
+    // 공주의 신하 마이크 강제 on/off — 현재 라운드 공주만 허용 (서버 검증)
+    public record MuteRequest(String targetId, boolean muted) {}
+    public record MuteBroadcast(String targetId, boolean muted, String by) {}
+
+    @MessageMapping("/rooms/{roomId}/mute")
+    public void mute(@DestinationVariable Integer roomId,
+                     MuteRequest p,
+                     Principal principal) {
+        if (!gameManager.isPrincess(roomId, principal.getName())) return;
+        messaging.convertAndSend("/topic/rooms/" + roomId + "/mute",
+                new MuteBroadcast(p.targetId(), p.muted(), principal.getName()));
     }
 
     // 어점 하사 페이로드

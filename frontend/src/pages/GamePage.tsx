@@ -12,6 +12,7 @@ import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 import { useFaceSender } from '../features/game/hooks/useFaceSender';
 import { useRemoteFaces } from '../features/game/hooks/useRemoteFaces';
+import { useVoiceChat } from '../features/game/hooks/useVoiceChat';
 
 import { useAudio } from '../components/AudioContext';
 
@@ -105,15 +106,24 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   const allNamesRef = useRef(allNames);
   allNamesRef.current = allNames;
 
+  const myId = sessionStorage.getItem('userId') ?? '';
+  const [peerIds, setPeerIds] = useState<string[]>([]); // 나를 제외한 방 유저 userId (음성 연결용)
+  const [mutedIds, setMutedIds] = useState<Record<string, boolean>>({}); // 공주가 입막은 유저들
+
   const loadPlayers = () => {
     getPlayers(room.room_id)
       .then((list) => {
         playersRef.current = Object.fromEntries(list.map((p) => [p.user_id, p.nickname]));
         setAllNames(list.map((p) => p.nickname));
+        setPeerIds(list.map((p) => p.user_id).filter((id) => id !== myId));
       })
       .catch(() => {});
   };
   useEffect(loadPlayers, [room.room_id]);
+
+  // 실시간 음성: 방 전원과 P2P 연결. 송출은 (내 마이크 on) && (공주가 안 막았을 때)만
+  const micLive = g.micOn && !mutedIds[myId];
+  useVoiceChat(room.room_id, myId, peerIds, micLive);
 
   const idToNick = (id?: string) => (id && playersRef.current[id]) || id || '';
 
@@ -295,6 +305,18 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
           loadPlayers();
         }
       }));
+
+      // 공주의 강제 음소거 방송 → 전원 상태 반영 (대상 유저는 송출 자동 차단)
+      subs.push(client.subscribe(`/topic/rooms/${room.room_id}/mute`, (msg) => {
+        const d = JSON.parse(msg.body) as { targetId: string; muted: boolean };
+        setMutedIds((prev) => ({ ...prev, [d.targetId]: d.muted }));
+        pushChat({
+          kind: 'system',
+          text: d.muted
+            ? `공주께서 ${idToNick(d.targetId)} 님의 발언을 금하셨사옵니다 🔇`
+            : `공주께서 ${idToNick(d.targetId)} 님의 발언을 허하셨사옵니다 🎙`,
+        });
+      }));
     };
     trySub();
 
@@ -341,7 +363,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
     isMe: n === nick,
     score: g.scores[n] ?? 0,
     speaking: !!g.speaking[n] && !(n === nick && !g.micOn),
-    muted: n === nick && !g.micOn,
+    muted: !!mutedIds[nickToId(n) ?? ''] || (n === nick && !g.micOn), // 강제음소거 or 셀프뮤트
     pos: {
       left: `${((i + 1) / (arr.length + 1)) * 100}%`, // 하단 폭을 인원수로 균등 분할
       bottom: '0%',
@@ -695,63 +717,109 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
               </div>
             ))}
 
-            {/* 신하 HUD (이름·점수·어점·마이크/조아리기) — 아바타 스케일과 무관하게
-                화면 하단에 "고정 크기"로 표시. 아바타가 커져도 다른 요소를 가리지 않는다 */}
-            {servants.map((p) => (
-              <div
-                key={`hud-${p.name}`}
-                style={{
-                  position: 'absolute',
-                  left: p.pos.left,
-                  bottom: 6,
-                  transform: 'translateX(-50%)',
-                  zIndex: 150,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 5,
-                  padding: '7px 11px',
-                  borderRadius: 9,
-                  background: 'rgba(18,8,6,.85)',
-                  border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.35)}`,
-                  backdropFilter: 'blur(4px)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
-                  <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
-                    {p.name}{' '}
-                    {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
-                  </span>
-                  {p.speaking && <SpeakingBars />}
-                  {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
-                  <span style={{ color: '#eed9a4', fontSize: 12 }}>✦ {p.score}</span>
-                </div>
-                {iAmPrincess && !p.isMe && (
-                  <button
-                    onClick={() => award(p.name)}
-                    disabled={awardsLeft <= 0}
-                    title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
-                    style={{
-                      ...primaryBtn,
-                      padding: '5px 11px',
-                      borderRadius: 7,
-                      fontSize: 11.5,
-                      letterSpacing: 1,
-                      opacity: awardsLeft <= 0 ? 0.4 : 1,
-                      cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    ✦ 어점 하사
-                  </button>
-                )}
-                {p.isMe && !iAmPrincess && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
-                    <BowButton onClick={triggerBow} />
+            {/* 우측 컨트롤 패널 — 아바타에 가려지지 않게 무대 오른쪽에 세로 스택으로 고정.
+                공주: 유저별 어점 하사 박스(위→아래) / 신하: 내 마이크·조아리기(위→아래) */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 76,
+                right: 12,
+                bottom: 12,
+                zIndex: 150,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: 10,
+                overflowY: 'auto',
+                pointerEvents: 'none', // 빈 영역은 무대 클릭 통과, 박스만 조작 가능
+              }}
+            >
+              {servants.map((p) => (
+                <div
+                  key={`hud-${p.name}`}
+                  style={{
+                    pointerEvents: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    gap: 6,
+                    padding: '8px 12px',
+                    borderRadius: 9,
+                    background: 'rgba(18,8,6,.88)',
+                    border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.35)}`,
+                    backdropFilter: 'blur(4px)',
+                    boxShadow: '0 8px 22px rgba(0,0,0,.45)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                    <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
+                      {p.name}{' '}
+                      {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
+                    </span>
+                    {p.speaking && <SpeakingBars />}
+                    {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
+                    <span style={{ color: '#eed9a4', fontSize: 12, marginLeft: 'auto' }}>✦ {p.score}</span>
                   </div>
-                )}
-              </div>
-            ))}
+                  {iAmPrincess && !p.isMe && (
+                    <>
+                      <button
+                        onClick={() => award(p.name)}
+                        disabled={awardsLeft <= 0}
+                        title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                        style={{
+                          ...primaryBtn,
+                          padding: '6px 11px',
+                          borderRadius: 7,
+                          fontSize: 11.5,
+                          letterSpacing: 1,
+                          opacity: awardsLeft <= 0 ? 0.4 : 1,
+                          cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        ✦ 어점 하사
+                      </button>
+                      {/* 공주 전용: 신하 마이크 강제 on/off (서버가 공주인지 검증 후 방송) */}
+                      <button
+                        onClick={() => {
+                          const tid = nickToId(p.name);
+                          const client = getStomp();
+                          if (!tid || !client?.connected) return;
+                          client.publish({
+                            destination: `/app/rooms/${room.room_id}/mute`,
+                            body: JSON.stringify({ targetId: tid, muted: !mutedIds[tid] }),
+                          });
+                        }}
+                        style={{
+                          padding: '5px 11px',
+                          borderRadius: 7,
+                          fontSize: 11.5,
+                          letterSpacing: 1,
+                          border: `1px solid ${GOLD(0.45)}`,
+                          background: mutedIds[nickToId(p.name) ?? ''] ? 'rgba(200,50,58,.25)' : 'transparent',
+                          color: '#f0e2bf',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {mutedIds[nickToId(p.name) ?? ''] ? '🔇 발언 허하기' : '🎙 입막음'}
+                      </button>
+                    </>
+                  )}
+                  {p.isMe && !iAmPrincess && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {mutedIds[myId] ? (
+                        // 공주가 막은 상태 — 스스로 켤 수 없음
+                        <div style={{ fontSize: 11, color: '#e8858c', textAlign: 'center', padding: '4px 2px' }}>
+                          공주께서 입을 막으셨소 🔇
+                        </div>
+                      ) : (
+                        <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                      )}
+                      <BowButton onClick={triggerBow} />
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* 용안 근경(표정 동기화) */}

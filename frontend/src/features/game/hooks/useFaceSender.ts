@@ -4,9 +4,10 @@ import type { FaceParamsRef } from "../../face/types";
 
 const SEND_INTERVAL_MS = 50; // 초당 20회 (인식은 30~60fps지만 전송은 줄임)
 
-// 내 faceParamsRef를 주기적으로 방 채널에 쏜다
-export function useFaceSender(roomId: number, faceParamsRef: FaceParamsRef) {
+// 내 faceParamsRef를 주기적으로 방 채널에 쏜다 (enabled = 내가 공주일 때만)
+export function useFaceSender(roomId: number, faceParamsRef: FaceParamsRef, enabled: boolean) {
   useEffect(() => {
+    if (!enabled) return; // 공주 아닐 땐 인터벌 자체를 안 돎 (대역폭 절약)
     let lastSent = 0; // 같은 프레임 중복 전송 방지
 
     const timer = window.setInterval(() => {
@@ -23,7 +24,7 @@ export function useFaceSender(roomId: number, faceParamsRef: FaceParamsRef) {
     }, SEND_INTERVAL_MS);
 
     return () => clearInterval(timer);
-  }, [roomId, faceParamsRef]);
+  }, [roomId, faceParamsRef, enabled]);
 }
 
 // 의도: 렌더 프레임마다가 아니라 50ms 타이머로 스로틀해서 트래픽을 초당 20회로 제한.

@@ -8,6 +8,8 @@ import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
 import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
+import { useFaceSender } from '../features/game/hooks/useFaceSender';
+import { useRemoteFace } from '../features/game/hooks/useRemoteFace';
 
 import { useAudio } from '../components/AudioContext';
 
@@ -52,6 +54,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
     chat: [{ kind: 'system', text: '제1연(第一宴)이 개막하였사옵니다' }],
   }));
   const [draft, setDraft] = useState('');
+  const [princessId, setPrincessId] = useState('');
 
   const gRef = useRef(g);
   gRef.current = g;
@@ -78,13 +81,6 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
     bowSpeechTimer.current = window.setTimeout(() => setBowSpeaking(false), 2000);
   };
   useEffect(() => () => window.clearTimeout(bowSpeechTimer.current), []);
-
-  // 공주로 간택된 플레이어의 얼굴 소스를 반환한다.
-  // 현재는 로컬 사용자(nick)만 웹캠 소스를 가지므로, 내가 공주일 때만 라이브 아바타가 뜬다.
-  // TODO(멀티플레이): 하인 역할의 실제 유저들이 참여하면, 원격 유저별 FaceParamsRef를
-  //   여기에 매핑해 "그 라운드에 공주로 간택된 유저"의 얼굴로 동기화되게 확장한다.
-  const faceSourceFor = (player: string): FaceParamsRef | null =>
-    player === nick ? faceParamsRef : null;
 
   // 서버 이벤트는 userId 기준, UI는 닉네임 기준 → 경계에서 변환한다
   const playersRef = useRef<Record<string, string>>({}); // userId → nickname
@@ -130,6 +126,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
         interstitial: false,
         awardsThisRound: 0,
       }));
+      setPrincessId(ev.princessId ?? '');   // 얼굴 중계 대상(userId) 갱신
       pushChat({
         kind: 'system',
         text: `제${ev.round}연 개막 — ${idToNick(ev.princessId)} 님이 공주로 간택되셨사옵니다 ♕`,
@@ -158,6 +155,11 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
 
   // 내가 공주인 라운드에 웃음(happy) 감지 → 서버로 전송 (점수 계산·방송은 서버 담당)
   useLaughSender(room.room_id, g.princess === nick, faceParamsRef);
+
+  // 얼굴 중계: 내가 공주면 내 표정을 송출, 아니면 공주(userId)의 표정을 수신
+  // (훅은 조건부 호출 불가 → 항상 부르고 enabled/필터로 제어)
+  useFaceSender(room.room_id, faceParamsRef, g.princess === nick);
+  const remoteFace = useRemoteFace(room.room_id, princessId);
 
   // 1초 게임 루프: 화면용 타이머 감소 + 발화 표시 (라운드 전환·점수는 서버가 방송)
   useEffect(() => {
@@ -210,7 +212,8 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
 
   const iAmPrincess = g.princess === nick;
   const awardsLeft = AWARDS_PER_ROUND - g.awardsThisRound; // 이번 라운드 남은 어점
-  const princessFace = faceSourceFor(g.princess); // 공주의 라이브 얼굴 소스(없으면 정적 이미지)
+  // 공주의 라이브 얼굴 소스: 내가 공주면 로컬 웹캠, 아니면 소켓으로 받은 원격 표정
+  const princessFace = iAmPrincess ? faceParamsRef : (princessId ? remoteFace : null);
   const low = g.secLeft <= 30;
   const mmss = `${Math.floor(Math.max(0, g.secLeft) / 60)}:${String(Math.max(0, g.secLeft) % 60).padStart(2, '0')}`;
   const servants = allNames

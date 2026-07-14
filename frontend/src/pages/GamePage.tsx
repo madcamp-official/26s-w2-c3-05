@@ -11,7 +11,7 @@ import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 import { useFaceSender } from '../features/game/hooks/useFaceSender';
-import { useRemoteFace } from '../features/game/hooks/useRemoteFace';
+import { useRemoteFaces } from '../features/game/hooks/useRemoteFaces';
 
 import { useAudio } from '../components/AudioContext';
 
@@ -205,10 +205,10 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   // 내가 공주인 라운드에 웃음(happy) 감지 → 서버로 전송 (점수 계산·방송은 서버 담당)
   useLaughSender(room.room_id, g.princess === nick, faceParamsRef);
 
-  // 얼굴 중계: 내가 공주면 내 표정을 송출, 아니면 공주(userId)의 표정을 수신
-  // (훅은 조건부 호출 불가 → 항상 부르고 enabled/필터로 제어)
-  useFaceSender(room.room_id, faceParamsRef, g.princess === nick);
-  const remoteFace = useRemoteFace(room.room_id, princessId);
+  // 얼굴 중계: 전원이 자기 표정을 송출하고, 전원의 표정을 유저별 ref로 수신한다
+  // → 공주뿐 아니라 신하 아바타들도 실제 유저 얼굴(표정·머리회전)로 동기화
+  useFaceSender(room.room_id, faceParamsRef, true);
+  const faceRefFor = useRemoteFaces(room.room_id);
 
   // 1초 게임 루프: 화면용 타이머 감소 + 발화 표시 (라운드 전환·점수는 서버가 방송)
   useEffect(() => {
@@ -318,7 +318,13 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   const iAmPrincess = g.princess === nick;
   const awardsLeft = AWARDS_PER_ROUND - g.awardsThisRound; // 이번 라운드 남은 어점
   // 공주의 라이브 얼굴 소스: 내가 공주면 로컬 웹캠, 아니면 소켓으로 받은 원격 표정
-  const princessFace = iAmPrincess ? faceParamsRef : (princessId ? remoteFace : null);
+  const princessFace = iAmPrincess ? faceParamsRef : (princessId ? faceRefFor(princessId) : null);
+  // 신하의 얼굴 소스: 내 신하는 로컬 웹캠(지연 없음), 남의 신하는 원격 표정 스트림
+  const servantFaceFor = (name: string): FaceParamsRef | undefined => {
+    if (name === nick) return faceParamsRef;
+    const id = nickToId(name);
+    return id ? faceRefFor(id) : undefined; // 명단 로딩 전엔 idle
+  };
   const low = g.secLeft <= 30;
   const mmss = `${Math.floor(Math.max(0, g.secLeft) / 60)}:${String(Math.max(0, g.secLeft) % 60).padStart(2, '0')}`;
   const servantNames = allNames.filter((n) => n !== g.princess);
@@ -672,7 +678,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                     </div>
                   </div>
                 )}
-                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={motionRefFor(p.name)} />
+                <ServantFigure glow={p.isMe} delay={p.delay} motionRef={motionRefFor(p.name)} faceParamsRef={servantFaceFor(p.name)} />
                 <div
                   style={{
                     width: 112,
@@ -1137,9 +1143,15 @@ function Dais({
 }
 
 /** 신하 아바타 — gnome.vrm 전신 렌더 (기존 CSS 실루엣 대체, sway·glow 연출 유지)
- *  motionRef: 엎드리기 등 모션 트리거 (내 신하에만 연결)
+ *  motionRef: 엎드리기 등 모션 트리거
+ *  faceParamsRef: 해당 유저의 얼굴 소스 (내 신하=로컬 웹캠, 남의 신하=원격 스트림)
  *  TODO(멀티플레이): 유저별 커스텀 VRM을 쓰게 되면 modelSrc를 플레이어 정보에서 받아온다. */
-function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: string; motionRef?: AvatarMotionRef }) {
+function ServantFigure({ glow, delay, motionRef, faceParamsRef }: {
+  glow: boolean;
+  delay: string;
+  motionRef?: AvatarMotionRef;
+  faceParamsRef?: FaceParamsRef;
+}) {
   return (
     <div
       style={{
@@ -1157,6 +1169,7 @@ function ServantFigure({ glow, delay, motionRef }: { glow: boolean; delay: strin
         frame="full"
         poseArmsDown={false} // 이미 팔이 포즈된 스캔 흉상 → T-pose 팔 내리기 보정 끔(뚱뚱 방지)
         motionRef={motionRef}
+        faceParamsRef={faceParamsRef}
         style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
       />
     </div>

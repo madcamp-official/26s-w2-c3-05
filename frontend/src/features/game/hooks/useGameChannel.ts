@@ -4,13 +4,14 @@ import { getStomp } from '../../../lib/stompClient';
 
 // 서버 GameEvent 페이로드 (backend GameEvent.java와 1:1)
 export interface GameEventMsg {
-  type: 'ROUND_START' | 'LAUGH' | 'ROUND_END' | 'GAME_END' | 'GAME_ABORT';
+  type: 'ROUND_START' | 'LAUGH' | 'AWARD' | 'ROUND_END' | 'GAME_END' | 'GAME_ABORT';
   round?: number;
   princessId?: string;
   topicId?: number;
   topicHead?: string;
   scores?: Record<string, number>;  // key = userId
   winnerId?: string;
+  targetId?: string;   // AWARD: 어점을 받은 하인 userId
 }
 
 // /topic/rooms/{id}/game 구독. 이벤트가 올 때마다 onEvent 호출

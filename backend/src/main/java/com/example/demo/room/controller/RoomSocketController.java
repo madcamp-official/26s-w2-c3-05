@@ -77,4 +77,15 @@ public class RoomSocketController {
     public void laugh(@DestinationVariable Integer roomId, Principal principal) {
         gameManager.handleLaugh(roomId, principal.getName());
     }
+
+    // 어점 하사 페이로드
+    public record AwardRequest(String targetId) {}
+
+    // 공주의 어점 하사: 검증·점수 반영·방송은 GameManager가 담당
+    @MessageMapping("/rooms/{roomId}/award")
+    public void award(@DestinationVariable Integer roomId,
+                      AwardRequest payload,
+                      Principal principal) {
+        gameManager.handleAward(roomId, principal.getName(), payload.targetId());
+    }
 }

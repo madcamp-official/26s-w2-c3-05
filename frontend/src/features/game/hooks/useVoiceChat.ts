@@ -3,7 +3,15 @@ import type { StompSubscription } from '@stomp/stompjs';
 import { getStomp } from '../../../lib/stompClient';
 
 const RTC_CONFIG: RTCConfiguration = {
-  iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+  iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
+    // 무료 공개 TURN — 서로 다른 네트워크(엄격한 NAT)에서도 연결되도록 중계 경로 확보
+    {
+      urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443'],
+      username: 'openrelayproject',
+      credential: 'openrelayproject',
+    },
+  ],
 };
 
 /**
@@ -17,6 +25,8 @@ const RTC_CONFIG: RTCConfiguration = {
 export function useVoiceChat(roomId: number, myId: string, peerIds: string[], micEnabled: boolean) {
   const pcs = useRef<Record<string, RTCPeerConnection>>({});
   const audios = useRef<Record<string, HTMLAudioElement>>({});
+  // remoteDescription 설정 전에 도착한 ICE 후보 대기열 (버리면 연결이 실패할 수 있음)
+  const pendingIce = useRef<Record<string, RTCIceCandidateInit[]>>({});
   const localStream = useRef<MediaStream | null>(null);
   const streamReady = useRef(false);
 
@@ -58,6 +68,9 @@ export function useVoiceChat(roomId: number, myId: string, peerIds: string[], mi
     pc.onicecandidate = (e) => {
       if (e.candidate) send(peer, 'ice', e.candidate.toJSON());
     };
+    // 현장 디버깅용: 연결 상태를 콘솔에 남긴다 (connected가 안 뜨면 NAT/TURN 문제)
+    pc.onconnectionstatechange = () =>
+      console.log(`[voice] ${peer}: ${pc!.connectionState}`);
     // 상대 음성 도착 → 숨은 <audio>로 재생
     pc.ontrack = (e) => {
       let a = audios.current[peer];
@@ -85,9 +98,11 @@ export function useVoiceChat(roomId: number, myId: string, peerIds: string[], mi
     const startCalls = () => {
       streamReady.current = true;
       peersRef.current.forEach((peer) => {
-        if (myId < peer && !pcs.current[peer]) offerTo(peer).catch(() => {});
-        // 내가 answerer(큰 id)인 상대에겐 "다시 offer 달라" 신호 → 내 트랙 포함 재협상
-        if (myId > peer) send(peer, 'need-offer', {});
+        // 핵심: 이미 연결이 있어도 "다시" 협상한다.
+        // 마이크 권한이 상대보다 늦게 떨어지면 트랙 없는 연결이 먼저 성립하는데,
+        // 그 위에 addTrack만 하고 재협상을 안 하면 내 목소리가 영영 전송되지 않는다.
+        if (myId < peer) offerTo(peer).catch(() => {});      // caller: (재)offer
+        else send(peer, 'need-offer', {});                    // answerer: 재협상 요청
       });
     };
     navigator.mediaDevices
@@ -133,15 +148,24 @@ export function useVoiceChat(roomId: number, myId: string, peerIds: string[], mi
             return;
           }
           const pc = getPc(d.from);
+          const flushIce = async () => {
+            const queued = pendingIce.current[d.from] ?? [];
+            pendingIce.current[d.from] = [];
+            for (const c of queued) await pc.addIceCandidate(c).catch(() => {});
+          };
           if (d.type === 'offer') {
             await pc.setRemoteDescription(JSON.parse(d.payload));
+            await flushIce();
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
             send(d.from, 'answer', answer);
           } else if (d.type === 'answer') {
             await pc.setRemoteDescription(JSON.parse(d.payload));
+            await flushIce();
           } else if (d.type === 'ice') {
-            await pc.addIceCandidate(JSON.parse(d.payload));
+            const cand = JSON.parse(d.payload) as RTCIceCandidateInit;
+            if (pc.remoteDescription) await pc.addIceCandidate(cand);
+            else (pendingIce.current[d.from] ??= []).push(cand); // 아직이면 대기열로
           }
         } catch {
           // 시그널 순서 꼬임 등은 이후 need-offer/재협상으로 회복되는 경우가 많아 무시

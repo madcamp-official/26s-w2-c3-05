@@ -6,6 +6,7 @@ import SignupPage from './pages/SignupPage';
 import LobbyPage from './pages/LobbyPage';
 import FriendsPage from './pages/FriendsPage';
 import RankingPage from './pages/RankingPage';
+import MyPage from './pages/MyPage';
 import CreateRoomPage from './pages/CreateRoomPage';
 import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
@@ -161,16 +162,43 @@ export async function getUserInfo(): Promise<UserInfo> {
   };
 }
 
-// test required
-export async function patchUserNickname(nickname: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/users/me`, {
-    method: "PATCH",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_nickname: nickname })
-    });
+// 마이페이지 정보 (닉네임+전적, /users/me 응답을 snake_case로 변환)
+export interface MyPageInfo {
+  user_id: string;
+  user_nickname: string;
+  user_rank: string;
+  user_point: number;
+  user_win: number;
+  user_lose: number;
+  user_played: number;
+  win_rate: number;   // 승률(%) — 서버 계산값
+}
 
-  return response.success
+export async function getMyPage(): Promise<MyPageInfo> {
+  const d = await request<Record<string, any>>(`/users/me`, {
+    method: "GET",
+    headers: authHeaders(),
+  });
+  return {
+    user_id: d.userId,
+    user_nickname: d.userNickname,
+    user_rank: d.userRank,
+    user_point: d.userPoint,
+    user_win: d.userWin,
+    user_lose: d.userLose,
+    user_played: d.userPlayed,
+    win_rate: d.winRate,
+  };
+}
+
+// 닉네임 변경 (백엔드 계약: PATCH /users/me/nickname {userNickname})
+export async function patchUserNickname(nickname: string): Promise<boolean> {
+  await request<void>(`/users/me/nickname`, {
+    method: "PATCH",
+    headers: authHeaders(),
+    body: JSON.stringify({ userNickname: nickname }),
+  });
+  return true;
 }
 
 // test required
@@ -725,6 +753,7 @@ type Stage =
   | { screen: 'lobby' }
   | { screen: 'friends' }
   | { screen: 'ranking' }
+  | { screen: 'mypage' }
   | { screen: 'create-room' }
   | { screen: 'waiting'; room: Room }
   | { screen: 'game'; room: Room; firstEvent: GameEventMsg }
@@ -774,10 +803,18 @@ export default function App() {
             onCreateRoom={() => setStage({ screen: 'create-room' })}
             onFriends={() => setStage({ screen: 'friends' })}
             onRanking={() => setStage({ screen: 'ranking' })}
+            onMyPage={() => setStage({ screen: 'mypage' })}
           />
         );
       case 'friends':
         return <FriendsPage userId={userId} onRetreat={() => setStage({ screen: 'lobby' })} />;
+      case 'mypage':
+        return (
+          <MyPage
+            onBack={() => setStage({ screen: 'lobby' })}
+            onNicknameChanged={(n) => setNick(n)}
+          />
+        );
       case 'ranking':
         return <RankingPage userId={userId} onRetreat={() => setStage({ screen: 'lobby' })} />;
       case 'create-room':

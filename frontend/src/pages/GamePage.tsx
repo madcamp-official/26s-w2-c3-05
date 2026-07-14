@@ -4,6 +4,8 @@ import { ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
 import { getPlayers } from '../App';
 import { useGameChannel, type GameEventMsg } from '../features/game/hooks/useGameChannel';
 import { useLaughSender } from '../features/game/hooks/useLaughSender';
+import { getStomp } from '../lib/stompClient';
+import type { StompSubscription } from '@stomp/stompjs';
 import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
 import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
@@ -192,9 +194,42 @@ export default function GamePage({ nick, room, firstEvent, onFinish }: {
   const sendChat = () => {
     const t = draft.trim();
     if (!t) return;
-    pushChat({ kind: 'self', who: nick, text: t });
+    pushChat({ kind: 'self', who: nick, text: t }); // 내 화면엔 즉시 표시
+    const client = getStomp();
+    if (client?.connected) {
+      client.publish({
+        destination: `/app/rooms/${room.room_id}/chat`,
+        body: JSON.stringify({ text: t }),          // 같은 방 사람들에게 중계
+      });
+    }
     setDraft('');
   };
+
+  // 게임 채팅 수신: 남이 보낸 것만 추가 (내 것은 전송 시 이미 찍음)
+  useEffect(() => {
+    const myId = sessionStorage.getItem('userId') ?? '';
+    let sub: StompSubscription | undefined;
+    let retry: number | undefined;
+    const trySub = () => {
+      const client = getStomp();
+      if (client?.connected) {
+        sub = client.subscribe(`/topic/rooms/${room.room_id}/chat`, (msg) => {
+          const d = JSON.parse(msg.body) as { userId: string; text: string };
+          if (d.userId === myId) return;
+          const who = idToNick(d.userId);
+          pushChat({ kind: 'other', who, text: d.text, crown: who === gRef.current.princess });
+        });
+      } else {
+        retry = window.setTimeout(trySub, 500);
+      }
+    };
+    trySub();
+    return () => {
+      sub?.unsubscribe();
+      window.clearTimeout(retry);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [room.room_id]);
 
   // 마우스 패럴랙스
   const onStageMove = (e: MouseEvent<HTMLDivElement>) => {

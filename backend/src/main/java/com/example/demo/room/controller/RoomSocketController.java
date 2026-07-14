@@ -1,5 +1,6 @@
 package com.example.demo.room.controller;
 
+import com.example.demo.room.dto.ChatBroadcast;
 import com.example.demo.room.dto.FaceBroadcast;
 import com.example.demo.room.dto.RoomEvent;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,16 @@ public class RoomSocketController {
                               FaceBroadcast.FacePayload payload,
                               Principal principal) {
         return new FaceBroadcast(principal.getName(), payload);
+    }
+
+    // 게임 채팅 중계: /app/rooms/3/chat {text} → /topic/rooms/3/chat {userId, text}
+    // face와 같은 순수 릴레이 — 보낸이는 서버가 세션에서 확정 (남 이름 위장 불가)
+    @MessageMapping("/rooms/{roomId}/chat")
+    @SendTo("/topic/rooms/{roomId}/chat")
+    public ChatBroadcast chat(@DestinationVariable Integer roomId,
+                              ChatBroadcast.ChatText payload,
+                              Principal principal) {
+        return new ChatBroadcast(principal.getName(), payload.text());
     }
 
     // 방장이 게임 시작

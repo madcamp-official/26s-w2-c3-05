@@ -672,53 +672,6 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                     </div>
                   </div>
                 )}
-                <div
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: 5,
-                    padding: '7px 11px',
-                    borderRadius: 9,
-                    background: 'rgba(18,8,6,.85)',
-                    border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.35)}`,
-                    backdropFilter: 'blur(4px)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
-                      {p.name}{' '}
-                      {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
-                    </span>
-                    {p.speaking && <SpeakingBars />}
-                    {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
-                    <span style={{ color: '#eed9a4', fontSize: 12 }}>✦ {p.score}</span>
-                  </div>
-                  {iAmPrincess && !p.isMe && (
-                    <button
-                      onClick={() => award(p.name)}
-                      disabled={awardsLeft <= 0}
-                      title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
-                      style={{
-                        ...primaryBtn,
-                        padding: '5px 11px',
-                        borderRadius: 7,
-                        fontSize: 11.5,
-                        letterSpacing: 1,
-                        opacity: awardsLeft <= 0 ? 0.4 : 1,
-                        cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      ✦ 어점 하사
-                    </button>
-                  )}
-                  {p.isMe && !iAmPrincess && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
-                      <BowButton onClick={triggerBow} />
-                    </div>
-                  )}
-                </div>
                 <ServantFigure glow={p.isMe} delay={p.delay} motionRef={motionRefFor(p.name)} />
                 <div
                   style={{
@@ -729,6 +682,64 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                     marginTop: -14,
                   }}
                 />
+              </div>
+            ))}
+
+            {/* 신하 HUD (이름·점수·어점·마이크/조아리기) — 아바타 스케일과 무관하게
+                화면 하단에 "고정 크기"로 표시. 아바타가 커져도 다른 요소를 가리지 않는다 */}
+            {servants.map((p) => (
+              <div
+                key={`hud-${p.name}`}
+                style={{
+                  position: 'absolute',
+                  left: p.pos.left,
+                  bottom: 6,
+                  transform: 'translateX(-50%)',
+                  zIndex: 150,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '7px 11px',
+                  borderRadius: 9,
+                  background: 'rgba(18,8,6,.85)',
+                  border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.35)}`,
+                  backdropFilter: 'blur(4px)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                  <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
+                    {p.name}{' '}
+                    {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
+                  </span>
+                  {p.speaking && <SpeakingBars />}
+                  {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
+                  <span style={{ color: '#eed9a4', fontSize: 12 }}>✦ {p.score}</span>
+                </div>
+                {iAmPrincess && !p.isMe && (
+                  <button
+                    onClick={() => award(p.name)}
+                    disabled={awardsLeft <= 0}
+                    title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                    style={{
+                      ...primaryBtn,
+                      padding: '5px 11px',
+                      borderRadius: 7,
+                      fontSize: 11.5,
+                      letterSpacing: 1,
+                      opacity: awardsLeft <= 0 ? 0.4 : 1,
+                      cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    ✦ 어점 하사
+                  </button>
+                )}
+                {p.isMe && !iAmPrincess && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                    <BowButton onClick={triggerBow} />
+                  </div>
+                )}
               </div>
             ))}
           </div>

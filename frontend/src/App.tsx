@@ -755,7 +755,15 @@ export default function App() {
           <LobbyPage
             nick={nick}
             onRetreat={() => setStage({ screen: 'login' })}
-            onJoin={(room) => setStage({ screen: 'waiting', room })}
+            onJoin={async (room) => {
+              try {
+                // 서버에 실제 입장 등록 (이걸 안 하면 명단에 안 잡힘)
+                const joined = await joinRoom('', room.room_id);
+                setStage({ screen: 'waiting', room: joined });
+              } catch {
+                alert('입장할 수 없는 연회이옵니다 (정원 초과·비밀방·이미 시작됨)');
+              }
+            }}
             onCreateRoom={() => setStage({ screen: 'create-room' })}
             onFriends={() => setStage({ screen: 'friends' })}
             onRanking={() => setStage({ screen: 'ranking' })}

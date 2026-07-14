@@ -23,33 +23,50 @@ export default function WaitingPage({
 
   // 명단 새로고침 (입장/퇴장 이벤트마다 재조회 — 단순하고 확실)
     const refresh = () => {
-      getPlayers(room.room_id).then(setPlayers).catch(() => {});
+      getPlayers(room.room_id)
+        .then((list) => {
+          if (list.length === 0) {
+            onLeave(); // 방이 사라짐(방장 퇴장 등) → 로비로
+            return;
+          }
+          setPlayers(list);
+        })
+        .catch(() => {});
     };
 
     useEffect(() => {
       refresh();
 
       // 소켓: 이 방 채널 구독 + 내 입장 알림
-      const client = getStomp();
+      // (연결이 아직이면 될 때까지 재시도 — 예전엔 이 시점에 미연결이면 영영 구독을 안 했음)
       let subId: string | null = null;
-      if (client?.connected) {
-        const sub = client.subscribe(`/topic/rooms/${room.room_id}`, () => refresh());
-        subId = sub.id;
-        client.publish({ destination: `/app/rooms/${room.room_id}/enter` });
-      }
+      let retry: number | undefined;
+      const trySubscribe = () => {
+        const client = getStomp();
+        if (client?.connected) {
+          const sub = client.subscribe(`/topic/rooms/${room.room_id}`, () => refresh());
+          subId = sub.id;
+          client.publish({ destination: `/app/rooms/${room.room_id}/enter` });
+        } else {
+          retry = window.setTimeout(trySubscribe, 500);
+        }
+      };
+      trySubscribe();
 
-      // 연결이 늦거나 이벤트를 놓쳐도 5초마다 동기화 (보험)
+      // 이벤트를 놓쳐도 5초마다 동기화 (보험)
       const poll = window.setInterval(refresh, 5000);
 
       return () => {
+        const client = getStomp();
         if (subId && client?.connected) client.unsubscribe(subId);
+        window.clearTimeout(retry);
         window.clearInterval(poll);
       };
     }, [room.room_id]);
 
     const slots = players.map((p) => ({
       name: p.nickname,
-      title: p.user_id === room.room_host ? '전주(殿主)' : '빈객(賓客)',
+      title: p.user_id === room.creator_id ? '전주(殿主)' : '빈객(賓客)', // room_host는 닉네임이라 비교 불가
       ready: true,                    // ready 시스템은 게임시작 단계에서
       isMe: p.user_id === myId,
     }));

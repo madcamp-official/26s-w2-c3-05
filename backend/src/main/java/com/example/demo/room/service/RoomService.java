@@ -110,10 +110,17 @@ public class RoomService {
     }
 
     // 방 나가기: 내 참가 기록 삭제, 방이 비면 방도 삭제
+    // 방장이 나가면 방 자체를 폐쇄 (참가자 기록은 FK ON DELETE CASCADE로 함께 정리)
     @Transactional
     public void leaveRoom(String myId, Integer roomId) {
         PlayerInfo player = playerInfoRepository.findById(new PlayerInfoId(myId, roomId))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "참여 중인 방이 아닙니다."));
+
+        RoomInfo room = roomRepository.findById(roomId).orElse(null);
+        if (room != null && room.getCreator().getUserId().equals(myId)) {
+            roomRepository.delete(room); // 방장 퇴장 = 연회 폐쇄
+            return;
+        }
 
         playerInfoRepository.delete(player);
 

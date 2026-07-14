@@ -23,9 +23,26 @@ export default function LobbyPage({
 
   const { setMusicSrc } = useAudio();
     const [rooms, setRooms] = useState<Room[]>([]);
+    const [refreshing, setRefreshing] = useState(false);
+
+    // 방 목록 갱신 (버튼·폴링 공용) — 페이지 이동 없이 목록만 다시 불러온다
+    const refreshRooms = async () => {
+      setRefreshing(true);
+      try {
+        setRooms(await getRooms());
+      } catch {
+        setRooms([]);
+      } finally {
+        setRefreshing(false);
+      }
+    };
 
     useEffect(() => {
-      getRooms().then(setRooms).catch(() => setRooms([]));
+      refreshRooms();
+      // 새 연회가 열리면 자동으로도 보이게 10초마다 동기화
+      const poll = window.setInterval(refreshRooms, 10000);
+      return () => window.clearInterval(poll);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
   return (
@@ -55,6 +72,14 @@ export default function LobbyPage({
               고르소서
             </div>
           </div>
+          <button
+            onClick={refreshRooms}
+            disabled={refreshing}
+            title="연회 목록 새로고침"
+            style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5, opacity: refreshing ? 0.5 : 1 }}
+          >
+            {refreshing ? '갱신 중…' : '↻ 새로고침'}
+          </button>
           <button
             onClick={onFriends}
             style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5 }}

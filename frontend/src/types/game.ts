@@ -7,7 +7,7 @@ export type NotificationType = 'FRIEND_REQUEST' | 'FRIEND_ACCEPT' | 'SYSTEM';
 
 export interface Room {
   room_id: number;
-  // creator_id: string; // host's id
+  creator_id?: string; // 방장 userId (호스트 판별용; 목데이터 호환 위해 optional)
   room_name: string; // name
   room_host: string; // host
   room_count: number; // count

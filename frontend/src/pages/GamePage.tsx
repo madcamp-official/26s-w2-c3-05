@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
-import type { ChatMsg, Scores } from '../types/game';
-import { BOTS, BOT_CHATTER, BOT_LINES, PRINCESS_LINES, ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
+import type { ChatMsg, Room, Scores } from '../types/game';
+import { ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
+import { getPlayers } from '../App';
+import { useGameChannel, type GameEventMsg } from '../features/game/hooks/useGameChannel';
+import { useLaughSender } from '../features/game/hooks/useLaughSender';
 import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
 import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
@@ -31,26 +34,23 @@ const POS = [
   { left: '88%', bottom: '0%', z: 120, sc: 0.95 },
 ];
 
-export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (scores: Scores) => void }) {
-  const [g, setG] = useState<GameState>(() => {
-    const scores: Scores = { [nick]: 0 };
-    BOTS.forEach((b) => (scores[b.name] = 0));
-    return {
-      round: 1,
-      secLeft: ROUND_SECONDS,
-      princess: nick, // 1라운드는 나 — 실제 서비스에선 서버가 랜덤 간택
-      scores,
-      speaking: {},
-      micOn: true,
-      interstitial: false,
-      awardsThisRound: 0,
-      chat: [
-        { kind: 'system', text: '제1연(第一宴)이 개막하였사옵니다' },
-        { kind: 'system', text: `${nick} 님께서 공주로 간택되셨사옵니다 ♕` },
-        { kind: 'other', who: '임소상', text: '공주마마, 소인 대령하였사옵니다.' },
-      ],
-    };
-  });
+export default function GamePage({ nick, room, firstEvent, onFinish }: {
+  nick: string;
+  room: Room;
+  firstEvent: GameEventMsg;   // 대기방에서 받은 1라운드 시작 정보
+  onFinish: (scores: Scores) => void;
+}) {
+  const [g, setG] = useState<GameState>(() => ({
+    round: 1,
+    secLeft: ROUND_SECONDS,
+    princess: '',               // 서버 ROUND_START가 채운다
+    scores: { [nick]: 0 },
+    speaking: {},
+    micOn: true,
+    interstitial: false,
+    awardsThisRound: 0,
+    chat: [{ kind: 'system', text: '제1연(第一宴)이 개막하였사옵니다' }],
+  }));
   const [draft, setDraft] = useState('');
 
   const gRef = useRef(g);
@@ -86,7 +86,24 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
   const faceSourceFor = (player: string): FaceParamsRef | null =>
     player === nick ? faceParamsRef : null;
 
-  const allNames = [nick, ...BOTS.map((b) => b.name)];
+  // 서버 이벤트는 userId 기준, UI는 닉네임 기준 → 경계에서 변환한다
+  const playersRef = useRef<Record<string, string>>({}); // userId → nickname
+  const [allNames, setAllNames] = useState<string[]>([nick]);
+  const allNamesRef = useRef(allNames);
+  allNamesRef.current = allNames;
+
+  useEffect(() => {
+    getPlayers(room.room_id)
+      .then((list) => {
+        playersRef.current = Object.fromEntries(list.map((p) => [p.user_id, p.nickname]));
+        setAllNames(list.map((p) => p.nickname));
+      })
+      .catch(() => {});
+  }, [room.room_id]);
+
+  const idToNick = (id?: string) => (id && playersRef.current[id]) || id || '';
+  const scoresToNick = (s?: Record<string, number>): Scores =>
+    Object.fromEntries(Object.entries(s ?? {}).map(([id, v]) => [idToNick(id), v]));
 
   const pushChat = (msg: ChatMsg) =>
     setG((prev) => ({ ...prev, chat: [...prev.chat, msg].slice(-80) }));
@@ -102,32 +119,47 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
     pushChat({ kind: 'system', text: `공주께서 ${target} 님에게 어점(御點)을 하사하셨사옵니다 ✦` });
   };
 
-  const endRound = () => {
-    const cur = gRef.current;
-    if (cur.interstitial || finishedRef.current) return;
-    if (cur.round >= TOTAL_ROUNDS) {
-      finishedRef.current = true;
-      onFinish(cur.scores);
-      return;
+  // 서버 게임 이벤트 → 로컬 상태 반영 (라운드 전환·점수·종료는 전부 서버가 결정)
+  const applyEvent = (ev: GameEventMsg) => {
+    if (ev.type === 'ROUND_START') {
+      setG((prev) => ({
+        ...prev,
+        round: ev.round ?? prev.round,
+        princess: idToNick(ev.princessId),
+        secLeft: ROUND_SECONDS,
+        interstitial: false,
+        awardsThisRound: 0,
+      }));
+      pushChat({
+        kind: 'system',
+        text: `제${ev.round}연 개막 — ${idToNick(ev.princessId)} 님이 공주로 간택되셨사옵니다 ♕`,
+      });
+      if (ev.topicHead) pushChat({ kind: 'system', text: `이번 연회의 주제: 「${ev.topicHead}」` });
+    } else if (ev.type === 'LAUGH') {
+      setG((prev) => ({ ...prev, scores: scoresToNick(ev.scores) }));
+      pushChat({ kind: 'system', text: '공주께서 웃음을 터뜨리셨사옵니다! 하인들에게 어점이 내려졌사옵니다 ✦' });
+    } else if (ev.type === 'ROUND_END') {
+      setG((prev) => ({ ...prev, interstitial: true, secLeft: 0, scores: scoresToNick(ev.scores) }));
+    } else if (ev.type === 'GAME_END') {
+      if (!finishedRef.current) {
+        finishedRef.current = true;
+        onFinish(scoresToNick(ev.scores));
+      }
     }
-    setG((prev) => ({ ...prev, interstitial: true, secLeft: 0 }));
-    timers.current.push(
-      window.setTimeout(() => {
-        const now = gRef.current;
-        const max = Math.max(...allNames.map((n) => now.scores[n] ?? 0));
-        const top = allNames.filter((n) => (now.scores[n] ?? 0) === max);
-        const princess = top[Math.floor(Math.random() * top.length)];
-        const round = now.round + 1;
-        setG((prev) => ({ ...prev, round, princess, secLeft: ROUND_SECONDS, interstitial: false, awardsThisRound: 0 }));
-        pushChat({
-          kind: 'system',
-          text: `제${round}연이 개막하였사옵니다 — ${princess} 님이 공주로 등극하셨사옵니다 ♕`,
-        });
-      }, 2800),
-    );
   };
 
-  // 1초 게임 루프: 타이머·음성 표시·봇 채팅·봇 공주의 어점 하사
+  useGameChannel(room.room_id, applyEvent);
+
+  // 대기방에서 받은 1라운드 시작 정보 즉시 적용
+  useEffect(() => {
+    applyEvent(firstEvent);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 내가 공주인 라운드에 웃음(happy) 감지 → 서버로 전송 (점수 계산·방송은 서버 담당)
+  useLaughSender(room.room_id, g.princess === nick, faceParamsRef);
+
+  // 1초 게임 루프: 화면용 타이머 감소 + 발화 표시 (라운드 전환·점수는 서버가 방송)
   useEffect(() => {
     const loop = window.setInterval(() => {
       const cur = gRef.current;
@@ -135,31 +167,12 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
 
       if (Math.random() < 0.6) {
         const speaking: Record<string, boolean> = {};
-        BOTS.forEach((b) => (speaking[b.name] = Math.random() < 0.35));
+        allNamesRef.current.forEach((n) => (speaking[n] = Math.random() < 0.3));
         speaking[nick] = cur.micOn && Math.random() < 0.3;
         setG((prev) => ({ ...prev, speaking }));
       }
 
-      if (BOT_CHATTER && Math.random() < 0.14) {
-        const isPrincessBot = cur.princess !== nick;
-        const usePrincess = isPrincessBot && Math.random() < 0.3;
-        const who = usePrincess ? cur.princess : BOTS[Math.floor(Math.random() * BOTS.length)].name;
-        const pool = who === cur.princess && isPrincessBot ? PRINCESS_LINES : BOT_LINES;
-        pushChat({
-          kind: 'other',
-          who,
-          text: pool[Math.floor(Math.random() * pool.length)],
-          crown: who === cur.princess,
-        });
-      }
-
-      if (cur.princess !== nick && Math.random() < 0.06) {
-        const targets = allNames.filter((n) => n !== cur.princess);
-        award(targets[Math.floor(Math.random() * targets.length)]);
-      }
-
-      if (cur.secLeft - 1 <= 0) endRound();
-      else setG((prev) => ({ ...prev, secLeft: prev.secLeft - 1 }));
+      setG((prev) => ({ ...prev, secLeft: Math.max(0, prev.secLeft - 1) }));
     }, 1000);
     return () => {
       clearInterval(loop);
@@ -293,25 +306,8 @@ export default function GamePage({ nick, onFinish }: { nick: string; onFinish: (
               {mmss}
             </span>
           </Pill>
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
-            <button
-              onClick={endRound}
-              title="시연용 — 라운드를 바로 끝냅니다"
-              style={{
-                padding: '7px 13px',
-                borderRadius: 999,
-                border: `1px solid ${GOLD(0.35)}`,
-                background: 'rgba(18,8,6,.55)',
-                color: 'rgba(240,226,191,.6)',
-                fontSize: 12,
-                letterSpacing: 1,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              시연용 · 라운드 넘기기 ⏭
-            </button>
-          </div>
+          {/* 라운드 전환은 서버(3분 타이머)가 담당 — 시연용 스킵 버튼 제거 */}
+          <div style={{ flex: 1 }} />
         </div>
 
         {/* 원근 무대 */}

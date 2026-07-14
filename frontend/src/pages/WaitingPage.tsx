@@ -18,7 +18,7 @@ export default function WaitingPage({
 }) {
   const [starting, setStarting] = useState(false);
   const timers = useRef<number[]>([]);
-  const myId = localStorage.getItem('userId') ?? '';
+  const myId = sessionStorage.getItem('userId') ?? '';
   const [players, setPlayers] = useState<{ user_id: string; nickname: string }[]>([]);
 
   // 명단 새로고침 (입장/퇴장 이벤트마다 재조회 — 단순하고 확실)

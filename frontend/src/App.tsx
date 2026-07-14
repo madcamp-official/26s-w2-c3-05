@@ -21,10 +21,10 @@ const HEADER = {
   "Authorization": "Bearer ${accessToken}"// `Bearer ${accessToken}`
 };
 
-// 매 요청 시점에 localStorage에서 토큰을 읽어 헤더 구성
+// 매 요청 시점에 sessionStorage에서 토큰을 읽어 헤더 구성 (탭별 독립 — 계정 섞임 방지)
 // (상수 HEADER는 로그인 "이전" 값이 박제되므로 새 코드는 이 함수를 사용)
 function authHeaders(): Record<string, string> {
-  const token = localStorage.getItem('accessToken');
+  const token = sessionStorage.getItem('accessToken');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
@@ -736,7 +736,7 @@ export default function App() {
           <LoginPage
             onEnter={(id, name) => {
               setUserId(id);
-              connectStomp(localStorage.getItem('accessToken') ?? ''); // 추가
+              connectStomp(sessionStorage.getItem('accessToken') ?? ''); // 추가
               setNick(name);
               setStage({ screen: 'lobby' });
             }}

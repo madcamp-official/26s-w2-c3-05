@@ -39,9 +39,11 @@ export default function LoginPage({
         setError('아이디 혹은 암구호가 올바르지 않사옵니다');
         return;
       }
-      // 추후 인증 컨텍스트로 이관 전까지 임시 보관
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('userId', userId.trim());
+      // sessionStorage = 탭마다 독립 저장.
+      // (localStorage는 모든 탭이 공유해서, 탭 2개로 다른 계정 로그인하면
+      //  마지막 로그인이 앞 탭의 토큰을 덮어써 계정이 뒤섞이는 사고가 남)
+      sessionStorage.setItem('accessToken', accessToken);
+      sessionStorage.setItem('userId', userId.trim());
 
       let nickname = userId.trim();
       try {

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import type { ChatMsg, Room, Scores } from '../types/game';
-import { ROUND_HANJA, ROUND_SECONDS, TOTAL_ROUNDS } from '../constants/game';
+import { ROUND_HANJA, ROUND_SECONDS } from '../constants/game';
 import { getPlayers, leaveRoom } from '../App';
 import { useGameChannel, type GameEventMsg } from '../features/game/hooks/useGameChannel';
 import { useLaughSender } from '../features/game/hooks/useLaughSender';
@@ -40,9 +40,12 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   onAborted: () => void;      // 인원 부족으로 게임 중단 → 대기화면 복귀
   onExit: () => void;         // 내가 연회를 파하고 나감 → 로비로
 }) {
+  // 방 생성 시 설정한 제한시간 (서버 타이머와 동일 기준; 없으면 기본값)
+  const roundSeconds = room.time_limit || ROUND_SECONDS;
+
   const [g, setG] = useState<GameState>(() => ({
     round: 1,
-    secLeft: ROUND_SECONDS,
+    secLeft: roundSeconds,
     princess: '',               // 서버 ROUND_START가 채운다
     scores: { [nick]: 0 },
     speaking: {},
@@ -151,7 +154,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
         ...prev,
         round: ev.round ?? prev.round,
         princess: idToNick(ev.princessId),
-        secLeft: ROUND_SECONDS,
+        secLeft: roundSeconds,
         interstitial: false,
         awardsThisRound: 0,
       }));

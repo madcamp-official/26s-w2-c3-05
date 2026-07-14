@@ -32,9 +32,7 @@ public class GameManager {
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final Random random = new Random();
 
-    // 고정 게임 규칙 (방의 roundLimit/timeLimit 대신 이 값을 사용)
-    private static final int TOTAL_ROUNDS = 4;          // 총 4라운드
-    private static final int ROUND_DURATION_SEC = 180;  // 라운드당 3분 (웃어도 끝까지 진행)
+    // 라운드 수·제한시간은 방 생성 시 설정값(GameInit)을 따른다
     private static final int MAX_SCORE_PER_ROUND = 5;   // 하인 1명이 한 라운드에 얻을 수 있는 최대 점수
     private static final int AWARDS_PER_ROUND = 5;      // 공주가 한 라운드에 하사할 수 있는 어점 총량
 
@@ -45,7 +43,7 @@ public class GameManager {
         }
         GameService.GameInit init = gameService.startAndLock(roomId, requesterId);
         GameState state = new GameState(roomId, new ArrayList<>(init.players()),
-                TOTAL_ROUNDS, ROUND_DURATION_SEC);
+                init.totalRounds(), init.timeLimitSec()); // 방 생성 시 설정한 판수·제한시간 적용
         games.put(roomId, state);
         startRound(state);
     }

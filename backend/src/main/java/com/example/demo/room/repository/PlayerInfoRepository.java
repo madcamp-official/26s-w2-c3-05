@@ -16,4 +16,10 @@ public interface PlayerInfoRepository extends JpaRepository<PlayerInfo, PlayerIn
 
     // 내가 이미 들어가 있는 방이 있는지 (동시에 한 방만 허용)
     boolean existsById_UserId(String userId);
+
+    // 내가 참여 중인 모든 방 기록 (잔류 상태 정리용)
+    List<PlayerInfo> findAllById_UserId(String userId);
+
+    // 방 폐쇄 시 참가자 일괄 정리
+    void deleteAllById_RoomId(Integer roomId);
 }

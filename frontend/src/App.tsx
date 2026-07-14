@@ -48,7 +48,14 @@ export async function request<T>(endpoint: string, options?: StrictRequestInit):
   const response = await fetch(`${BASE_URL}${endpoint}`, options);
 
   if (!response.ok) {
-    throw new Error(`네트워크 응답 에러: ${response.statusText}`);
+    // 토큰 만료(1시간): 죽은 세션을 정리해서 "조용한 실패" 대신 재로그인 유도
+    if (response.status === 401) {
+      sessionStorage.removeItem('accessToken');
+      sessionStorage.removeItem('userId');
+      alert('입궁이 만료되었사옵니다. 다시 로그인하소서.');
+      window.location.reload(); // 로그인 화면으로
+    }
+    throw new Error(`API ${response.status}: ${response.statusText}`);
   }
   // 201/204처럼 본문이 없는 응답 대비
   const text = await response.text();

@@ -717,110 +717,138 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
               </div>
             ))}
 
-            {/* 우측 컨트롤 패널 — 아바타에 가려지지 않게 무대 오른쪽에 세로 스택으로 고정.
-                공주: 유저별 어점 하사 박스(위→아래) / 신하: 내 마이크·조아리기(위→아래) */}
+          </div>
+
+          {/* 신하 얼굴 카드 — 얼굴(라이브)+이름·점수+버튼을 한 박스로 묶어
+              공주 좌/우 컬럼에 위→아래로 배치. 원근 무대(3D) 밖 평면 레이어라
+              기둥(translateZ)이나 공주 아바타에 가려지지 않는다 */}
+          {[0, 1].map((side) => (
             <div
+              key={`face-col-${side}`}
               style={{
                 position: 'absolute',
-                top: 76,
-                right: 12,
+                top: side === 0 ? 116 : 76, // 왼쪽 컬럼은 용안 근경 아래부터
+                ...(side === 0 ? { left: 12 } : { right: 12 }),
                 bottom: 12,
-                zIndex: 150,
+                zIndex: 20,
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'flex-end',
+                alignItems: side === 0 ? 'flex-start' : 'flex-end',
                 gap: 10,
                 overflowY: 'auto',
-                pointerEvents: 'none', // 빈 영역은 무대 클릭 통과, 박스만 조작 가능
+                pointerEvents: 'none', // 빈 영역은 무대 클릭 통과, 카드만 조작 가능
               }}
             >
-              {servants.map((p) => (
+              {servants.filter((_, i) => i % 2 === side).map((p) => (
                 <div
                   key={`hud-${p.name}`}
                   style={{
                     pointerEvents: 'auto',
                     display: 'flex',
-                    flexDirection: 'column',
                     alignItems: 'stretch',
-                    gap: 6,
-                    padding: '8px 12px',
-                    borderRadius: 9,
+                    gap: 9,
+                    padding: 8,
+                    borderRadius: 10,
                     background: 'rgba(18,8,6,.88)',
-                    border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.35)}`,
+                    border: `1px solid ${p.isMe ? GOLD(0.8) : GOLD(0.4)}`,
+                    boxShadow: `inset 0 0 0 3px rgba(18,8,6,.5), inset 0 0 0 4px ${GOLD(0.16)}, 0 8px 22px rgba(0,0,0,.45)`,
                     backdropFilter: 'blur(4px)',
-                    boxShadow: '0 8px 22px rgba(0,0,0,.45)',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
-                      {p.name}{' '}
-                      {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
-                    </span>
-                    {p.speaking && <SpeakingBars />}
-                    {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
-                    <span style={{ color: '#eed9a4', fontSize: 12, marginLeft: 'auto' }}>✦ {p.score}</span>
+                  {/* 얼굴 근경 — 해당 유저 표정·머리회전이 실시간 반영되는 미니 아바타 */}
+                  <div
+                    style={{
+                      width: 64,
+                      alignSelf: 'stretch',
+                      minHeight: 76,
+                      borderRadius: 7,
+                      border: `1px solid ${GOLD(0.45)}`,
+                      background: 'radial-gradient(circle at 50% 35%, rgba(240,205,120,.16), rgba(20,9,6,.9) 70%)',
+                      overflow: 'hidden',
+                      flex: 'none',
+                    }}
+                  >
+                    <VRMAvatar
+                      modelSrc="/servant.vrm"
+                      frame="full"
+                      poseArmsDown={false}
+                      faceParamsRef={servantFaceFor(p.name)}
+                      style={{ width: '100%', height: '100%', pointerEvents: 'none' }}
+                    />
                   </div>
-                  {iAmPrincess && !p.isMe && (
-                    <>
-                      <button
-                        onClick={() => award(p.name)}
-                        disabled={awardsLeft <= 0}
-                        title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
-                        style={{
-                          ...primaryBtn,
-                          padding: '6px 11px',
-                          borderRadius: 7,
-                          fontSize: 11.5,
-                          letterSpacing: 1,
-                          opacity: awardsLeft <= 0 ? 0.4 : 1,
-                          cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
-                        }}
-                      >
-                        ✦ 어점 하사
-                      </button>
-                      {/* 공주 전용: 신하 마이크 강제 on/off (서버가 공주인지 검증 후 방송) */}
-                      <button
-                        onClick={() => {
-                          const tid = nickToId(p.name);
-                          const client = getStomp();
-                          if (!tid || !client?.connected) return;
-                          client.publish({
-                            destination: `/app/rooms/${room.room_id}/mute`,
-                            body: JSON.stringify({ targetId: tid, muted: !mutedIds[tid] }),
-                          });
-                        }}
-                        style={{
-                          padding: '5px 11px',
-                          borderRadius: 7,
-                          fontSize: 11.5,
-                          letterSpacing: 1,
-                          border: `1px solid ${GOLD(0.45)}`,
-                          background: mutedIds[nickToId(p.name) ?? ''] ? 'rgba(200,50,58,.25)' : 'transparent',
-                          color: '#f0e2bf',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {mutedIds[nickToId(p.name) ?? ''] ? '🔇 발언 허하기' : '🎙 입막음'}
-                      </button>
-                    </>
-                  )}
-                  {p.isMe && !iAmPrincess && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {mutedIds[myId] ? (
-                        // 공주가 막은 상태 — 스스로 켤 수 없음
-                        <div style={{ fontSize: 11, color: '#e8858c', textAlign: 'center', padding: '4px 2px' }}>
-                          공주께서 입을 막으셨소 🔇
-                        </div>
-                      ) : (
-                        <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
-                      )}
-                      <BowButton onClick={triggerBow} />
+                  {/* 이름·점수 + 역할별 버튼 */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, justifyContent: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, whiteSpace: 'nowrap' }}>
+                      <span style={{ color: '#f0e2bf', fontSize: 13, fontWeight: 600 }}>
+                        {p.name}{' '}
+                        {p.isMe && <span style={{ color: 'rgba(238,217,164,.55)', fontSize: 11 }}>(나)</span>}
+                      </span>
+                      {p.speaking && <SpeakingBars />}
+                      {p.muted && <span style={{ color: '#e8858c', fontSize: 10 }}>✕</span>}
+                      <span style={{ color: '#eed9a4', fontSize: 12, marginLeft: 'auto' }}>✦ {p.score}</span>
                     </div>
-                  )}
+                    {iAmPrincess && !p.isMe && (
+                      <>
+                        <button
+                          onClick={() => award(p.name)}
+                          disabled={awardsLeft <= 0}
+                          title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                          style={{
+                            ...primaryBtn,
+                            padding: '6px 11px',
+                            borderRadius: 7,
+                            fontSize: 11.5,
+                            letterSpacing: 1,
+                            opacity: awardsLeft <= 0 ? 0.4 : 1,
+                            cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          ✦ 어점 하사
+                        </button>
+                        {/* 공주 전용: 신하 마이크 강제 on/off (서버가 공주인지 검증 후 방송) */}
+                        <button
+                          onClick={() => {
+                            const tid = nickToId(p.name);
+                            const client = getStomp();
+                            if (!tid || !client?.connected) return;
+                            client.publish({
+                              destination: `/app/rooms/${room.room_id}/mute`,
+                              body: JSON.stringify({ targetId: tid, muted: !mutedIds[tid] }),
+                            });
+                          }}
+                          style={{
+                            padding: '5px 11px',
+                            borderRadius: 7,
+                            fontSize: 11.5,
+                            letterSpacing: 1,
+                            border: `1px solid ${GOLD(0.45)}`,
+                            background: mutedIds[nickToId(p.name) ?? ''] ? 'rgba(200,50,58,.25)' : 'transparent',
+                            color: '#f0e2bf',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {mutedIds[nickToId(p.name) ?? ''] ? '🔇 발언 허하기' : '🎙 입막음'}
+                        </button>
+                      </>
+                    )}
+                    {p.isMe && !iAmPrincess && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {mutedIds[myId] ? (
+                          // 공주가 막은 상태 — 스스로 켤 수 없음
+                          <div style={{ fontSize: 11, color: '#e8858c', textAlign: 'center', padding: '4px 2px' }}>
+                            공주께서 입을 막으셨소 🔇
+                          </div>
+                        ) : (
+                          <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                        )}
+                        <BowButton onClick={triggerBow} />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
-          </div>
+          ))}
 
           {/* 용안 근경(표정 동기화) */}
           <div style={{ position: 'absolute', top: 12, left: 14, zIndex: 3, display: 'flex', alignItems: 'center', gap: 9 }}>

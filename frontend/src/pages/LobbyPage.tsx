@@ -8,16 +8,21 @@ import { useAudio } from '../components/AudioContext';
 export default function LobbyPage({
   nick,
   onJoin,
-  onRetreat 
+  onRetreat,
+  onCreateRoom,
+  onFriends,
+  onRanking,
 }: {
   nick: string;
   onJoin: (room: Room) => void;
   onRetreat: () => void;
+  onCreateRoom: () => void;
+  onFriends: () => void;
+  onRanking: () => void;
 }) {
 
   const { setMusicSrc } = useAudio();
   useEffect(() => {
-      // 홈 페이지에 오면 쾌활한 음악으로 변경
       setMusicSrc('../../assets/bgm/bgm_lobby.mp3');
     }, [setMusicSrc]);
 
@@ -48,7 +53,22 @@ export default function LobbyPage({
               고르소서
             </div>
           </div>
-          <button style={{ ...primaryBtn, padding: '12px 20px', fontSize: 14, letterSpacing: 2 }}>
+          <button
+            onClick={onFriends}
+            style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5 }}
+          >
+            벗 명부
+          </button>
+          <button
+            onClick={onRanking}
+            style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5 }}
+          >
+            천하 방
+          </button>
+          <button
+            onClick={onCreateRoom}
+            style={{ ...primaryBtn, padding: '12px 20px', fontSize: 14, letterSpacing: 2 }}
+          >
             ＋ 새 연회 열기
           </button>
         </div>

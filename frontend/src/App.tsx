@@ -2,7 +2,11 @@ import { useState } from 'react';
 
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
+import SignupPage from './pages/SignupPage';
 import LobbyPage from './pages/LobbyPage';
+import FriendsPage from './pages/FriendsPage';
+import RankingPage from './pages/RankingPage';
+import CreateRoomPage from './pages/CreateRoomPage';
 import WaitingPage from './pages/WaitingPage';
 import GamePage from './pages/GamePage';
 import ResultPage from './pages/ResultPage';
@@ -709,13 +713,18 @@ export async function getVersion(): Promise<string> {
 
 type Stage =
   | { screen: 'login' }
+  | { screen: 'signup' }
   | { screen: 'lobby' }
+  | { screen: 'friends' }
+  | { screen: 'ranking' }
+  | { screen: 'create-room' }
   | { screen: 'waiting'; room: Room }
   | { screen: 'game'; room: Room }
   | { screen: 'result'; room: Room; scores: Scores };
 
 export default function App() {
   const [nick, setNick] = useState('');
+  const [userId, setUserId] = useState('');
   const [stage, setStage] = useState<Stage>({ screen: 'login' });
 
   // 화면 분기만 담당 (switch가 case마다 바로 return하므로 함수로 분리)
@@ -724,10 +733,19 @@ export default function App() {
       case 'login':
         return (
           <LoginPage
-            onEnter={(name) => {
+            onEnter={(id, name) => {
+              setUserId(id);
               setNick(name);
               setStage({ screen: 'lobby' });
             }}
+            onSignup={() => setStage({ screen: 'signup' })}
+          />
+        );
+      case 'signup':
+        return (
+          <SignupPage
+            onSignedUp={() => setStage({ screen: 'login' })}
+            onBack={() => setStage({ screen: 'login' })}
           />
         );
       case 'lobby':
@@ -736,6 +754,22 @@ export default function App() {
             nick={nick}
             onRetreat={() => setStage({ screen: 'login' })}
             onJoin={(room) => setStage({ screen: 'waiting', room })}
+            onCreateRoom={() => setStage({ screen: 'create-room' })}
+            onFriends={() => setStage({ screen: 'friends' })}
+            onRanking={() => setStage({ screen: 'ranking' })}
+          />
+        );
+      case 'friends':
+        return <FriendsPage userId={userId} onRetreat={() => setStage({ screen: 'lobby' })} />;
+      case 'ranking':
+        return <RankingPage userId={userId} onRetreat={() => setStage({ screen: 'lobby' })} />;
+      case 'create-room':
+        return (
+          <CreateRoomPage
+            userId={userId}
+            nickname={nick}
+            onCancel={() => setStage({ screen: 'lobby' })}
+            onCreated={() => setStage({ screen: 'lobby' })}
           />
         );
       case 'waiting':

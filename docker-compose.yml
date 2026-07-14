@@ -35,6 +35,9 @@ services:
     container_name: cheonha-frontend
     ports:
       - "80:80"                       # 외부 진입점은 nginx 하나뿐
+      - "443:443"
+    volumes:
+      - /home/ubuntu/certs:/etc/letsencrypt:ro   # 서버의 인증서를 읽기전용 마운트
     depends_on:
       - backend
     restart: unless-stopped

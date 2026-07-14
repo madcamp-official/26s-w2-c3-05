@@ -12,6 +12,7 @@ import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 import { useFaceSender } from '../features/game/hooks/useFaceSender';
 import { useRemoteFaces } from '../features/game/hooks/useRemoteFaces';
+import { useVoiceChat } from '../features/game/hooks/useVoiceChat';
 
 import { useAudio } from '../components/AudioContext';
 
@@ -105,15 +106,24 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   const allNamesRef = useRef(allNames);
   allNamesRef.current = allNames;
 
+  const myId = sessionStorage.getItem('userId') ?? '';
+  const [peerIds, setPeerIds] = useState<string[]>([]); // 나를 제외한 방 유저 userId (음성 연결용)
+  const [mutedIds, setMutedIds] = useState<Record<string, boolean>>({}); // 공주가 입막은 유저들
+
   const loadPlayers = () => {
     getPlayers(room.room_id)
       .then((list) => {
         playersRef.current = Object.fromEntries(list.map((p) => [p.user_id, p.nickname]));
         setAllNames(list.map((p) => p.nickname));
+        setPeerIds(list.map((p) => p.user_id).filter((id) => id !== myId));
       })
       .catch(() => {});
   };
   useEffect(loadPlayers, [room.room_id]);
+
+  // 실시간 음성: 방 전원과 P2P 연결. 송출은 (내 마이크 on) && (공주가 안 막았을 때)만
+  const micLive = g.micOn && !mutedIds[myId];
+  useVoiceChat(room.room_id, myId, peerIds, micLive);
 
   const idToNick = (id?: string) => (id && playersRef.current[id]) || id || '';
 
@@ -295,6 +305,18 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
           loadPlayers();
         }
       }));
+
+      // 공주의 강제 음소거 방송 → 전원 상태 반영 (대상 유저는 송출 자동 차단)
+      subs.push(client.subscribe(`/topic/rooms/${room.room_id}/mute`, (msg) => {
+        const d = JSON.parse(msg.body) as { targetId: string; muted: boolean };
+        setMutedIds((prev) => ({ ...prev, [d.targetId]: d.muted }));
+        pushChat({
+          kind: 'system',
+          text: d.muted
+            ? `공주께서 ${idToNick(d.targetId)} 님의 발언을 금하셨사옵니다 🔇`
+            : `공주께서 ${idToNick(d.targetId)} 님의 발언을 허하셨사옵니다 🎙`,
+        });
+      }));
     };
     trySub();
 
@@ -341,7 +363,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
     isMe: n === nick,
     score: g.scores[n] ?? 0,
     speaking: !!g.speaking[n] && !(n === nick && !g.micOn),
-    muted: n === nick && !g.micOn,
+    muted: !!mutedIds[nickToId(n) ?? ''] || (n === nick && !g.micOn), // 강제음소거 or 셀프뮤트
     pos: {
       left: `${((i + 1) / (arr.length + 1)) * 100}%`, // 하단 폭을 인원수로 균등 분할
       bottom: '0%',
@@ -739,26 +761,59 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                     <span style={{ color: '#eed9a4', fontSize: 12, marginLeft: 'auto' }}>✦ {p.score}</span>
                   </div>
                   {iAmPrincess && !p.isMe && (
-                    <button
-                      onClick={() => award(p.name)}
-                      disabled={awardsLeft <= 0}
-                      title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
-                      style={{
-                        ...primaryBtn,
-                        padding: '6px 11px',
-                        borderRadius: 7,
-                        fontSize: 11.5,
-                        letterSpacing: 1,
-                        opacity: awardsLeft <= 0 ? 0.4 : 1,
-                        cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
-                      }}
-                    >
-                      ✦ 어점 하사
-                    </button>
+                    <>
+                      <button
+                        onClick={() => award(p.name)}
+                        disabled={awardsLeft <= 0}
+                        title={awardsLeft <= 0 ? '이번 라운드 어점을 모두 하사하셨사옵니다' : undefined}
+                        style={{
+                          ...primaryBtn,
+                          padding: '6px 11px',
+                          borderRadius: 7,
+                          fontSize: 11.5,
+                          letterSpacing: 1,
+                          opacity: awardsLeft <= 0 ? 0.4 : 1,
+                          cursor: awardsLeft <= 0 ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        ✦ 어점 하사
+                      </button>
+                      {/* 공주 전용: 신하 마이크 강제 on/off (서버가 공주인지 검증 후 방송) */}
+                      <button
+                        onClick={() => {
+                          const tid = nickToId(p.name);
+                          const client = getStomp();
+                          if (!tid || !client?.connected) return;
+                          client.publish({
+                            destination: `/app/rooms/${room.room_id}/mute`,
+                            body: JSON.stringify({ targetId: tid, muted: !mutedIds[tid] }),
+                          });
+                        }}
+                        style={{
+                          padding: '5px 11px',
+                          borderRadius: 7,
+                          fontSize: 11.5,
+                          letterSpacing: 1,
+                          border: `1px solid ${GOLD(0.45)}`,
+                          background: mutedIds[nickToId(p.name) ?? ''] ? 'rgba(200,50,58,.25)' : 'transparent',
+                          color: '#f0e2bf',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {mutedIds[nickToId(p.name) ?? ''] ? '🔇 발언 허하기' : '🎙 입막음'}
+                      </button>
+                    </>
                   )}
                   {p.isMe && !iAmPrincess && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                      {mutedIds[myId] ? (
+                        // 공주가 막은 상태 — 스스로 켤 수 없음
+                        <div style={{ fontSize: 11, color: '#e8858c', textAlign: 'center', padding: '4px 2px' }}>
+                          공주께서 입을 막으셨소 🔇
+                        </div>
+                      ) : (
+                        <MicButton micOn={g.micOn} onClick={() => setG((prev) => ({ ...prev, micOn: !prev.micOn }))} />
+                      )}
                       <BowButton onClick={triggerBow} />
                     </div>
                   )}

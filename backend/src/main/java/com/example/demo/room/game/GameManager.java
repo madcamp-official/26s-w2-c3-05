@@ -106,6 +106,12 @@ public class GameManager {
         startRound(s);
     }
 
+    // 현재 라운드의 공주인지 (마이크 강제제어 등 권한 검증용)
+    public synchronized boolean isPrincess(Integer roomId, String userId) {
+        GameState s = games.get(roomId);
+        return s != null && userId.equals(s.princessId);
+    }
+
     // 공주가 하인에게 어점(御點) 하사 — 검증·점수·방송 모두 서버가 담당
     public synchronized void handleAward(Integer roomId, String senderId, String targetId) {
         GameState s = games.get(roomId);

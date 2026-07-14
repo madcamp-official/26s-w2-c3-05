@@ -1,6 +1,8 @@
 package com.example.demo.room.controller;
 
+import com.example.demo.room.dto.ChatBroadcast;
 import com.example.demo.room.dto.FaceBroadcast;
+import com.example.demo.room.dto.MotionBroadcast;
 import com.example.demo.room.dto.RoomEvent;
 import lombok.RequiredArgsConstructor;
 import org.springframework.messaging.handler.annotation.DestinationVariable;
@@ -26,7 +28,17 @@ public class RoomSocketController {
     @MessageMapping("/rooms/{roomId}/leave")
     @SendTo("/topic/rooms/{roomId}")
     public RoomEvent leave(@DestinationVariable Integer roomId, Principal principal) {
+        gameManager.handlePlayerLeave(roomId, principal.getName()); // 게임 중이면 이탈 처리
         return RoomEvent.leave(principal.getName());
+    }
+
+    // 아바타 모션(조아리기 등) 중계: /app/rooms/3/motion {action} → /topic/rooms/3/motion
+    @MessageMapping("/rooms/{roomId}/motion")
+    @SendTo("/topic/rooms/{roomId}/motion")
+    public MotionBroadcast motion(@DestinationVariable Integer roomId,
+                                  MotionBroadcast.MotionPayload payload,
+                                  Principal principal) {
+        return new MotionBroadcast(principal.getName(), payload.action());
     }
 
     // 의도: REST로 방에 join한 뒤, 클라이언트가 소켓으로
@@ -42,6 +54,16 @@ public class RoomSocketController {
                               FaceBroadcast.FacePayload payload,
                               Principal principal) {
         return new FaceBroadcast(principal.getName(), payload);
+    }
+
+    // 게임 채팅 중계: /app/rooms/3/chat {text} → /topic/rooms/3/chat {userId, text}
+    // face와 같은 순수 릴레이 — 보낸이는 서버가 세션에서 확정 (남 이름 위장 불가)
+    @MessageMapping("/rooms/{roomId}/chat")
+    @SendTo("/topic/rooms/{roomId}/chat")
+    public ChatBroadcast chat(@DestinationVariable Integer roomId,
+                              ChatBroadcast.ChatText payload,
+                              Principal principal) {
+        return new ChatBroadcast(principal.getName(), payload.text());
     }
 
     // 방장이 게임 시작

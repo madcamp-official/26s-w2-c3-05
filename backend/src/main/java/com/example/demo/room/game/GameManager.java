@@ -99,6 +99,30 @@ public class GameManager {
         startRound(s);
     }
 
+    // 게임 중 이탈 처리 (명시적 leave·소켓 끊김 공통)
+    // - 남은 인원 1명 이하 → 게임 중단(GAME_ABORT) + 방 잠금 해제
+    // - 공주가 나가면 현재 라운드를 접고 다음 라운드로
+    public synchronized void handlePlayerLeave(Integer roomId, String userId) {
+        GameState s = games.get(roomId);
+        if (s == null || !s.players.remove(userId)) return;
+
+        if (s.players.size() < 2) {
+            if (s.timer != null) s.timer.cancel(false);
+            games.remove(roomId);
+            messaging.convertAndSend("/topic/rooms/" + roomId + "/game",
+                    GameEvent.abort(s.scores));
+            gameService.unlockRoom(roomId); // 다시 대기방으로 쓸 수 있게
+            return;
+        }
+        if (userId.equals(s.princessId) && s.roundActive) {
+            if (s.timer != null) s.timer.cancel(false);
+            s.roundActive = false;
+            messaging.convertAndSend("/topic/rooms/" + roomId + "/game",
+                    GameEvent.roundEnd(s.round, s.scores));
+            startRound(s); // 다음 공주로 이어서 진행
+        }
+    }
+
     // 게임 종료: 승자 계산 → 방송 → DB 집계
     private void endGame(GameState s) {
         games.remove(s.roomId);

@@ -26,4 +26,8 @@ public record GameEvent(
     public static GameEvent gameEnd(Map<String, Integer> scores, String winnerId) {
         return new GameEvent("GAME_END", null, null, null, null, scores, winnerId);
     }
+    // 인원 부족(1명 잔류)으로 게임 중단 → 클라는 대기화면으로 복귀
+    public static GameEvent abort(Map<String, Integer> scores) {
+        return new GameEvent("GAME_ABORT", null, null, null, null, scores, null);
+    }
 }

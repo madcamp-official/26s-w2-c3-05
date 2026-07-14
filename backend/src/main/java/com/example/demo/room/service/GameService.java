@@ -46,6 +46,12 @@ public class GameService {
         return new GameInit(players, rounds, time);
     }
 
+    // 게임 중단 시 방만 다시 열어준다 (전적 집계 없음)
+    @Transactional
+    public void unlockRoom(Integer roomId) {
+        roomRepository.findById(roomId).ifPresent(r -> r.setCanAccess(true));
+    }
+
     // 게임 종료: 전적 집계 + 방 잠금 해제
     @Transactional
     public void finish(Integer roomId, Map<String, Integer> scores, String winnerId) {

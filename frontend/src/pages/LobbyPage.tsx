@@ -12,6 +12,7 @@ export default function LobbyPage({
   onCreateRoom,
   onFriends,
   onRanking,
+  onMyPage,
 }: {
   nick: string;
   onJoin: (room: Room) => void;
@@ -19,6 +20,7 @@ export default function LobbyPage({
   onCreateRoom: () => void;
   onFriends: () => void;
   onRanking: () => void;
+  onMyPage: () => void;
 }) {
 
   const { setMusicSrc } = useAudio();
@@ -79,6 +81,12 @@ export default function LobbyPage({
             style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5, opacity: refreshing ? 0.5 : 1 }}
           >
             {refreshing ? '갱신 중…' : '↻ 새로고침'}
+          </button>
+          <button
+            onClick={onMyPage}
+            style={{ ...ghostBtn, padding: '12px 18px', fontSize: 13, letterSpacing: 1.5 }}
+          >
+            내 서첩
           </button>
           <button
             onClick={onFriends}

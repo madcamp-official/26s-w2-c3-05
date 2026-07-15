@@ -16,7 +16,16 @@ CREATE TABLE user_info (
 
 CREATE TABLE stat (
                       user_id      VARCHAR(16) NOT NULL,
-                      user_rank    ranktype_t  NOT NULL DEFAULT 'NONE',
+                      user_rank    ranktype_t  GENERATED ALWAYS AS (
+                        CASE
+                            WHEN user_point >= 3000 THEN 'DIAMOND'
+                            WHEN user_point >= 2000 THEN 'PLATINUM'
+                            WHEN user_point >= 1000 THEN 'GOLD'
+                            WHEN user_point >= 500 THEN 'SILVER'
+                            WHEN user_point >= 100 THEN 'BRONZE'
+                            ELSE 'NONE'
+                        END 
+                      ) STORED
                       user_point   INT         NOT NULL DEFAULT 0,
                       user_win     INT         NOT NULL DEFAULT 0,
                       user_lose    INT         NOT NULL DEFAULT 0,

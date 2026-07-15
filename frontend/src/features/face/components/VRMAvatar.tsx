@@ -13,6 +13,12 @@ export type AvatarMotionRef = MutableRefObject<AvatarMotion>;
 // easeInOutQuad — 모션이 기계적으로 보이지 않게
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
+const HEAD_PITCH_SIGNS: Record<string, 1 | -1> = {
+  "/avatar.vrm": -1,
+  "/servant.vrm": 1,
+  "/servant_decimated.vrm": 1,
+};
+
 export function VRMAvatar({
   faceParamsRef,
   motionRef,
@@ -68,6 +74,7 @@ export function VRMAvatar({
         if (disposed) return;              // 로드 중 언마운트되면 버림
         vrm = gltf.userData.vrm as VRM;    // 파싱된 VRM은 여기에 담김
         VRMUtils.rotateVRM0(vrm);          // VRM0.x 모델이 뒤돌아 있는 것 보정
+        vrm.scene.userData.headPitchSign = HEAD_PITCH_SIGNS[modelSrc] ?? 1;
         scene.add(vrm.scene);
 
         // T포즈 모델(avatar.vrm 등)은 팔을 아래로 내려 정지 자세로 만든다.

@@ -15,6 +15,13 @@ const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 const BOW_DOWN = 0.5, BOW_HOLD = 0.7, BOW_UP = 0.6;
 const BOW_TOTAL = BOW_DOWN + BOW_HOLD + BOW_UP;
 
+// Each VRM was authored with a different local head-axis direction.
+const HEAD_PITCH_SIGNS: Record<string, 1 | -1> = {
+  "/avatar.vrm": -1,
+  "/servant.vrm": 1,
+  "/servant_decimated.vrm": 1,
+};
+
 // 기존 <VRMAvatar>의 드롭인 대체. 자리표시 div만 렌더하고, 실제 3D는
 // 상위 <AvatarStage>의 공유 렌더러가 이 div 영역(scissor)에 그린다.
 export function AvatarView({
@@ -109,6 +116,7 @@ export function AvatarView({
         if (disposed) { VRMUtils.deepDispose(vrm.scene); return; }
         if (poseArmsDown) applyArmsDown(vrm);
         st.vrm = vrm;
+        vrm.scene.userData.headPitchSign = HEAD_PITCH_SIGNS[modelSrc] ?? 1;
         scene.add(vrm.scene);
         entry.pendingFrame = true; // 로드됐으니 카메라 재프레이밍
       })

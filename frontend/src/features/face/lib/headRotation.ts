@@ -8,5 +8,8 @@ const _quat = new THREE.Quaternion();
 export function matrixToHeadRotation(data: number[]) {
   _matrix.fromArray(data);              // 4×4 행렬 복원
   _quat.setFromRotationMatrix(_matrix); // 회전 성분만 추출
-  return { x: -_quat.x, y: -_quat.y, z: _quat.z, w: _quat.w };
+  // MediaPipe와 VRM 사이에서 pitch(x)는 같은 방향입니다.
+  // x를 반전하면 고개를 숙일 때 아바타가 뒤로 젖혀집니다.
+  // 좌우(yaw)만 카메라 좌표계 보정을 위해 반전합니다.
+  return { x: _quat.x, y: -_quat.y, z: _quat.z, w: _quat.w };
 }

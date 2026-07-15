@@ -53,7 +53,7 @@ function aimBone(vrm: VRM, boneName: ArmBone, childName: ChildBone, dir: Vec3, a
   bone.updateWorldMatrix(false, false);                  // 아래팔이 갱신된 위팔 기준으로 조준되게
 }
 
-export function applyFaceParams(vrm: VRM, params: FaceParams) {
+export function applyFaceParams(vrm: VRM, params: FaceParams, headPitchSign = 1) {
   // 표정
   const em = vrm.expressionManager;
   if (em) {
@@ -66,7 +66,9 @@ export function applyFaceParams(vrm: VRM, params: FaceParams) {
   const head = vrm.humanoid?.getNormalizedBoneNode("head");
   if (head) {
     const { x, y, z, w } = params.headRotation;
-    _headQuat.set(x, y, z, w);
+    const modelPitchSign = vrm.scene.userData.headPitchSign;
+    const pitchSign = modelPitchSign === -1 ? -1 : headPitchSign;
+    _headQuat.set(x * pitchSign, y, z, w);
     head.quaternion.slerp(_headQuat, 0.4); // 0.4로 부드럽게 보간 = 공짜 노이즈 필터
   }
 

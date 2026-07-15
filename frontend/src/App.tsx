@@ -351,7 +351,7 @@ export async function getRooms(): Promise<Room[]> {
       player_limit: d.playerLimit,
       round_limit: d.roundLimit,
       time_limit: d.timeLimit,
-      can_access: true,            // 목록엔 입장 가능한 방만 옴
+      can_access: d.canAccess,     // 게임 중이면 false → 로비에서 "연회중" 표시
     }));
   }
 

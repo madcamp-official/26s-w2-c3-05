@@ -12,8 +12,8 @@ import java.util.Optional;
 
 public interface RoomRepository extends JpaRepository<RoomInfo, Integer> {
 
-    // 로비 목록: 입장 가능한 방만
-    List<RoomInfo> findAllByCanAccessTrueOrderByRoomIdDesc();
+    // 로비 목록: 게임 중인 방도 포함(전체), 최신순 — "연회중" 표시로 구분
+    List<RoomInfo> findAllByOrderByRoomIdDesc();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from RoomInfo r where r.roomId = :roomId")

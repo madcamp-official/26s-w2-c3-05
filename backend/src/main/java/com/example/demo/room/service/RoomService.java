@@ -86,10 +86,10 @@ public class RoomService {
         return RoomDto.of(room, 1);
     }
 
-    // 로비 방 목록 (입장 가능한 방만, 최신순)
+    // 로비 방 목록 (게임 중인 방도 포함, 최신순 — canAccess로 "연회중" 구분)
     @Transactional(readOnly = true)
     public List<RoomDto> getRooms() {
-        return roomRepository.findAllByCanAccessTrueOrderByRoomIdDesc()
+        return roomRepository.findAllByOrderByRoomIdDesc()
             .stream()
             .map(room -> RoomDto.of(room, playerInfoRepository.countById_RoomId(room.getRoomId())))
             .toList();

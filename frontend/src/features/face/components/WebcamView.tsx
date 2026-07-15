@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import { useWebcam } from "../hooks/useWebcam";
 import { useFaceLandmarker } from "../hooks/useFaceLandmarker";
+import { usePoseLandmarker } from "../hooks/usePoseLandmarker";
 import type { FaceParamsRef } from "../types";
 
 export function WebcamView({
@@ -12,7 +13,8 @@ export function WebcamView({
 }) {
   // faceParamsRef를 받아서 비디오와 동기화
   const { videoRef, error } = useWebcam();
-  useFaceLandmarker(videoRef, faceParamsRef); // ← 상자 넘김
+  useFaceLandmarker(videoRef, faceParamsRef); // ← 상자 넘김 (표정·머리)
+  usePoseLandmarker(videoRef, faceParamsRef); // ← 같은 상자에 팔 회전 병합
 
   if (error)
     return (

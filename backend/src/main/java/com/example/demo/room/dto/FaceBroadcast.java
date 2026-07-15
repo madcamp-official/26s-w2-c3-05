@@ -11,10 +11,15 @@ public record FaceBroadcast(
     public record FacePayload(
             Map<String, Double> expressions,             // { aa: 0.7, blinkLeft: 0.1, ... }
             HeadRotation headRotation,
+            ArmRotations armRotations,                   // 팔 회전 (포즈 미인식이면 null)
             long timestamp
     ) {}
 
     public record HeadRotation(double x, double y, double z, double w) {}
+
+    // 프론트 ArmRotations와 1:1 대응 — 없으면 Jackson이 조용히 버려서 필드 명시 필수
+    public record ArmRotations(double leftUpper, double leftLower,
+                               double rightUpper, double rightLower) {}
 }
 // 의도: 프론트 FaceParams 타입을 그대로 JSON으로 받는 그릇.
 // userId는 클라이언트가 보내는 게 아니라 서버가 소켓 세션의 Principal에서 꺼내 붙입니다

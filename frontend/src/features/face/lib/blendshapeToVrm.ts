@@ -34,4 +34,21 @@ export function applyFaceParams(vrm: VRM, params: FaceParams) {
     _headQuat.set(x, y, z, w);
     head.quaternion.slerp(_headQuat, 0.4); // 0.4로 부드럽게 보간 = 공짜 노이즈 필터
   }
+
+  // 팔 회전 — 포즈 인식 결과가 있을 때만 적용.
+  // 없으면(팔이 화면 밖 등) 마지막 자세/기본 팔내림 자세가 유지된다.
+  if (params.armRotations) {
+    const a = params.armRotations;
+    const setArmZ = (
+      bone: "leftUpperArm" | "leftLowerArm" | "rightUpperArm" | "rightLowerArm",
+      z: number
+    ) => {
+      const node = vrm.humanoid?.getNormalizedBoneNode(bone);
+      if (node) node.rotation.z += (z - node.rotation.z) * 0.3; // lerp = 떨림 필터
+    };
+    setArmZ("leftUpperArm", a.leftUpper);
+    setArmZ("leftLowerArm", a.leftLower);
+    setArmZ("rightUpperArm", a.rightUpper);
+    setArmZ("rightLowerArm", a.rightLower);
+  }
 }

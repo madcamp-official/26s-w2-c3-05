@@ -1,5 +1,5 @@
 import type { Scores } from '../types/game';
-import { BOTS, RANK_HANJA } from '../constants/game';
+import { RANK_HANJA } from '../constants/game';
 import { Divider, Backdrop, GOLD, primaryBtn, ghostBtn, panel } from '../components/ui';
 
 import { useEffect } from 'react';
@@ -16,7 +16,10 @@ export default function ResultPage({
   onLobby: () => void;
   onAgain: () => void;
 }) {
-  const names = [nick, ...BOTS.map((b) => b.name)];
+  // 실제 참가자 명단은 서버가 보내준 점수(scores)의 키에서 얻는다.
+  // 중간에 나간 유저도 서버가 그 시점까지의 점수를 scores에 그대로 유지하므로 함께 표시된다.
+  // (예전엔 하드코딩된 BOTS 명단을 썼기 때문에 실제 유저 점수가 매칭되지 않아 전부 0점으로 나왔다)
+  const names = Array.from(new Set([nick, ...Object.keys(scores)]));
   const sorted = names.map((n) => ({ name: n, score: scores[n] ?? 0 })).sort((a, b) => b.score - a.score);
   const winner = sorted[0];
 

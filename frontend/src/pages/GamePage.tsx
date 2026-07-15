@@ -7,7 +7,9 @@ import { useLaughSender } from '../features/game/hooks/useLaughSender';
 import { getStomp } from '../lib/stompClient';
 import type { StompSubscription } from '@stomp/stompjs';
 import { GOLD, SpeakingBars, primaryBtn } from '../components/ui';
-import { VRMAvatar, type AvatarMotion, type AvatarMotionRef } from '../features/face/components/VRMAvatar';
+import { AvatarStage } from '../features/face/components/AvatarStage';
+import { AvatarView } from '../features/face/components/AvatarView';
+import { type AvatarMotionRef } from '../features/face/components/VRMAvatar';
 import { WebcamView } from '../features/face/components/WebcamView';
 import { initialFaceParams, type FaceParams, type FaceParamsRef } from '../features/face/types';
 import { useFaceSender } from '../features/game/hooks/useFaceSender';
@@ -379,6 +381,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   }, [setMusicSrc]);  
 
   return (
+    <AvatarStage zIndex={25}>
     <div style={{ position: 'fixed', inset: 0, display: 'flex' }}>
       {/* ─── 3D 무대 ─── */}
       <div
@@ -552,7 +555,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
               {princessFace ? (
                 // 공주로 간택된 사람의 웹캠 얼굴이 실시간 반영되는 VRM 아바타
                 // 병풍(옥좌 뒤 네모 박스) 규격에 맞게 크게 표시
-                <VRMAvatar
+                <AvatarView
                   faceParamsRef={princessFace}
                   style={{
                     position: 'relative',
@@ -768,7 +771,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                       flex: 'none',
                     }}
                   >
-                    <VRMAvatar
+                    <AvatarView
                       modelSrc="/servant.vrm"
                       frame="full"
                       poseArmsDown={false}
@@ -914,7 +917,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
               justifyContent: 'center',
               gap: 24,
               animation: 'fadeIn .4s ease both',
-              zIndex: 5,
+              zIndex: 60, // 아바타 공유 캔버스(zIndex 25) 위로 — 간택 연출이 아바타를 덮게
             }}
           >
             <div style={{ position: 'relative', width: 110, height: 110 }}>
@@ -1047,6 +1050,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
         </div>
       </div>
     </div>
+    </AvatarStage>
   );
 }
 
@@ -1264,7 +1268,7 @@ function ServantFigure({ glow, delay, motionRef, faceParamsRef }: {
           : 'drop-shadow(0 8px 14px rgba(0,0,0,.45))',
       }}
     >
-      <VRMAvatar
+      <AvatarView
         modelSrc="/servant.vrm"
         frame="full"
         poseArmsDown={false} // 이미 팔이 포즈된 스캔 흉상 → T-pose 팔 내리기 보정 끔(뚱뚱 방지)

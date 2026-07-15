@@ -786,7 +786,7 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
                     }}
                   >
                     <AvatarView
-                      modelSrc="/servant.vrm"
+                      modelSrc="/servant_decimated.vrm"
                       frame="full"
                       poseArmsDown={false}
                       faceParamsRef={servantFaceFor(p.name)}

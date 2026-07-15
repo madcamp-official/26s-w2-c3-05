@@ -15,11 +15,13 @@ const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 const BOW_DOWN = 0.5, BOW_HOLD = 0.7, BOW_UP = 0.6;
 const BOW_TOTAL = BOW_DOWN + BOW_HOLD + BOW_UP;
 
-// Each VRM was authored with a different local head-axis direction.
+// 모델마다 머리 뼈의 로컬 축(pitch 방향)이 반대라, 같은 headRotation을 줘도
+// 고개가 반대로 숙여진다. 모델별로 pitch 부호를 보정한다.
+// (공주 avatar.vrm 와 신하 servant.vrm 는 서로 반대 컨벤션 → 부호가 반대)
 const HEAD_PITCH_SIGNS: Record<string, 1 | -1> = {
-  "/avatar.vrm": -1,
-  "/servant.vrm": -1,
-  "/servant_decimated.vrm": -1,
+  "/avatar.vrm": -1,           // 공주
+  "/servant.vrm": 1,           // 신하 — 공주와 반대 축이라 반대 부호
+  "/servant_decimated.vrm": 1, // 신하 얼굴카드용 흉상(동일 모델)
 };
 
 // 기존 <VRMAvatar>의 드롭인 대체. 자리표시 div만 렌더하고, 실제 3D는

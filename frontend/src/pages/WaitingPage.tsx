@@ -10,11 +10,13 @@ export default function WaitingPage({
   room,
   onLeave,
   onStart,
+  onHostChanged,
 }: {
   nick: string;
   room: Room;
   onLeave: () => void;
   onStart: (first: GameEventMsg) => void;
+  onHostChanged: (hostId: string) => void;
 }) {
   const [starting, setStarting] = useState(false);
   const timers = useRef<number[]>([]);
@@ -44,7 +46,11 @@ export default function WaitingPage({
       const trySubscribe = () => {
         const client = getStomp();
         if (client?.connected) {
-          const sub = client.subscribe(`/topic/rooms/${room.room_id}`, () => refresh());
+          const sub = client.subscribe(`/topic/rooms/${room.room_id}`, (message) => {
+            const event = JSON.parse(message.body) as { type: string; userId: string };
+            if (event.type === 'HOST_CHANGED') onHostChanged(event.userId);
+            refresh();
+          });
           subId = sub.id;
           client.publish({ destination: `/app/rooms/${room.room_id}/enter` });
         } else {
@@ -62,7 +68,7 @@ export default function WaitingPage({
         window.clearTimeout(retry);
         window.clearInterval(poll);
       };
-    }, [room.room_id]);
+    }, [room.room_id, onHostChanged]);
 
     const slots = players.map((p) => ({
       name: p.nickname,

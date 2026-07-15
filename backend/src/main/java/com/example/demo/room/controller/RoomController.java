@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,7 @@ import java.util.List;
 public class RoomController {
 
     private final RoomService roomService;
+    private final SimpMessagingTemplate messaging;
 
     // 방 생성 (생성자가 방장으로 자동 입장)
     @PostMapping
@@ -59,7 +61,11 @@ public class RoomController {
     // 방 나가기
     @DeleteMapping("/{roomId}/leave")
     public ResponseEntity<Void> leave(Authentication auth, @PathVariable Integer roomId) {
-        roomService.leaveRoom(auth.getName(), roomId);
+        RoomService.LeaveResult result = roomService.leaveRoom(auth.getName(), roomId);
+        if (result.newHostId() != null) {
+            messaging.convertAndSend("/topic/rooms/" + roomId,
+                    com.example.demo.room.dto.RoomEvent.hostChanged(result.newHostId()));
+        }
         return ResponseEntity.noContent().build(); // 204
     }
 }

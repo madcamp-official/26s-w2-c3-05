@@ -123,7 +123,7 @@ export default function SignupPage({
 
   return (
     <Backdrop
-      image="/assets/bg-login.png"
+      image="/assets/bg-signup.png"
       overlay="linear-gradient(180deg, rgba(16,7,5,.45) 0%, rgba(16,7,5,.62) 55%, rgba(16,7,5,.8) 100%)"
       scroll
     >

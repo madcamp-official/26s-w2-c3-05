@@ -18,8 +18,8 @@ const BOW_TOTAL = BOW_DOWN + BOW_HOLD + BOW_UP;
 // Each VRM was authored with a different local head-axis direction.
 const HEAD_PITCH_SIGNS: Record<string, 1 | -1> = {
   "/avatar.vrm": -1,
-  "/servant.vrm": 1,
-  "/servant_decimated.vrm": 1,
+  "/servant.vrm": -1,
+  "/servant_decimated.vrm": -1,
 };
 
 // 기존 <VRMAvatar>의 드롭인 대체. 자리표시 div만 렌더하고, 실제 3D는

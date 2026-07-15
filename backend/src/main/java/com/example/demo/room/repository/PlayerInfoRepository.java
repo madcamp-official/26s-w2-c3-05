@@ -14,6 +14,8 @@ public interface PlayerInfoRepository extends JpaRepository<PlayerInfo, PlayerIn
     // 방의 참가자 목록
     List<PlayerInfo> findAllById_RoomId(Integer roomId);
 
+    List<PlayerInfo> findAllById_RoomIdOrderById_UserIdAsc(Integer roomId);
+
     // 내가 이미 들어가 있는 방이 있는지 (동시에 한 방만 허용)
     boolean existsById_UserId(String userId);
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 
 import type { UserInfo, PlayerInfo, Stat, Room, Scores, Notification, UserFriends, Topic } from './types/game';
 import LoginPage from './pages/LoginPage';
@@ -790,6 +790,14 @@ export default function App() {
   const [userId, setUserId] = useState('');
   const [stage, setStage] = useState<Stage>({ screen: 'login' });
 
+  const handleHostChanged = useCallback((hostId: string) => {
+    setStage((current) =>
+      current.screen === 'waiting'
+        ? { ...current, room: { ...current.room, creator_id: hostId } }
+        : current
+    );
+  }, []);
+
   // 화면 분기만 담당 (switch가 case마다 바로 return하므로 함수로 분리)
   const renderPage = () => {
     switch (stage.screen) {
@@ -862,6 +870,7 @@ export default function App() {
             room={stage.room}
             onLeave={() => setStage({ screen: 'lobby' })}
             onStart={(first) => setStage({ screen: 'game', room: stage.room, firstEvent: first })}
+            onHostChanged={handleHostChanged}
           />
         );
       case 'game':

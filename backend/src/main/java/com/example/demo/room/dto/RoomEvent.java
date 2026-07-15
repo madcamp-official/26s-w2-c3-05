@@ -7,4 +7,5 @@ public record RoomEvent(
 ) {
     public static RoomEvent enter(String userId) { return new RoomEvent("ENTER", userId); }
     public static RoomEvent leave(String userId) { return new RoomEvent("LEAVE", userId); }
+    public static RoomEvent hostChanged(String userId) { return new RoomEvent("HOST_CHANGED", userId); }
 }

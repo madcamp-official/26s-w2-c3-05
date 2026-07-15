@@ -12,6 +12,7 @@ import com.example.demo.user.entity.UserInfo;
 import com.example.demo.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,10 +24,13 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RoomService {
 
+    public record LeaveResult(boolean roomDeleted, String newHostId) {}
+
     private final RoomRepository roomRepository;
     private final PlayerInfoRepository playerInfoRepository;
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final SimpMessagingTemplate messaging;
 
     // 유저를 현재 참여 중인 모든 방에서 떼어낸다 (새 방 생성/입장 전 상태 정리)
     // 이전 세션이 비정상 종료(새로고침·탭닫기 등)돼 잔류한 참여 기록 때문에
@@ -34,13 +38,16 @@ public class RoomService {
     private void detachFromAnyRoom(String myId) {
         for (PlayerInfo p : playerInfoRepository.findAllById_UserId(myId)) {
             Integer oldRoomId = p.getId().getRoomId();
-            RoomInfo oldRoom = roomRepository.findById(oldRoomId).orElse(null);
+            RoomInfo oldRoom = roomRepository.findByRoomIdForUpdate(oldRoomId).orElse(null);
             boolean iAmCreator = oldRoom != null && oldRoom.getCreator().getUserId().equals(myId);
             if (iAmCreator) {
                 // 내가 방장이던 방은 폐쇄: 참가자 전원 → 방 순서로 명시 삭제
                 // (DB CASCADE에 맡기면 Hibernate flush 순서에 따라 삭제가 묻히는 경우가 있음)
-                playerInfoRepository.deleteAllById_RoomId(oldRoomId);
-                roomRepository.deleteById(oldRoomId);
+                LeaveResult result = transferHostOrDelete(oldRoom, p);
+                if (result.newHostId() != null) {
+                    messaging.convertAndSend("/topic/rooms/" + oldRoomId,
+                            com.example.demo.room.dto.RoomEvent.hostChanged(result.newHostId()));
+                }
             } else {
                 playerInfoRepository.delete(p);
                 if (playerInfoRepository.countById_RoomId(oldRoomId) == 0) {
@@ -133,16 +140,14 @@ public class RoomService {
     // 방 나가기: 내 참가 기록 삭제, 방이 비면 방도 삭제
     // 방장이 나가면 방 자체를 폐쇄 (참가자 기록은 FK ON DELETE CASCADE로 함께 정리)
     @Transactional
-    public void leaveRoom(String myId, Integer roomId) {
+    public LeaveResult leaveRoom(String myId, Integer roomId) {
         PlayerInfo player = playerInfoRepository.findById(new PlayerInfoId(myId, roomId))
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "참여 중인 방이 아닙니다."));
 
-        RoomInfo room = roomRepository.findById(roomId).orElse(null);
+        RoomInfo room = roomRepository.findByRoomIdForUpdate(roomId).orElse(null);
         if (room != null && room.getCreator().getUserId().equals(myId)) {
             // 방장 퇴장 = 연회 폐쇄 (참가자 → 방 순서로 명시 삭제)
-            playerInfoRepository.deleteAllById_RoomId(roomId);
-            roomRepository.deleteById(roomId);
-            return;
+            return transferHostOrDelete(room, player);
         }
 
         playerInfoRepository.delete(player);
@@ -150,5 +155,22 @@ public class RoomService {
         if (playerInfoRepository.countById_RoomId(roomId) == 0) {
             roomRepository.deleteById(roomId); // 빈 방 정리
         }
+        return new LeaveResult(false, null);
+    }
+
+    private LeaveResult transferHostOrDelete(RoomInfo room, PlayerInfo leavingPlayer) {
+        playerInfoRepository.delete(leavingPlayer);
+        playerInfoRepository.flush();
+
+        List<PlayerInfo> remaining = playerInfoRepository
+            .findAllById_RoomIdOrderById_UserIdAsc(room.getRoomId());
+        if (remaining.isEmpty()) {
+            roomRepository.delete(room);
+            return new LeaveResult(true, null);
+        }
+
+        String newHostId = remaining.get(0).getUser().getUserId();
+        room.setCreator(remaining.get(0).getUser());
+        return new LeaveResult(false, newHostId);
     }
 }

@@ -4,6 +4,7 @@ import com.example.demo.room.dto.RoomEvent;
 import com.example.demo.room.entity.PlayerInfo;
 import com.example.demo.room.game.GameManager;
 import com.example.demo.room.repository.PlayerInfoRepository;
+import com.example.demo.room.service.RoomService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -22,6 +23,7 @@ public class WebSocketEventListener {
     private final SimpMessagingTemplate messaging;
     private final PlayerInfoRepository playerInfoRepository;
     private final GameManager gameManager;
+    private final RoomService roomService;
 
     @EventListener
     public void onDisconnect(SessionDisconnectEvent event) {
@@ -31,7 +33,11 @@ public class WebSocketEventListener {
 
         for (PlayerInfo p : playerInfoRepository.findAllById_UserId(userId)) {
             Integer roomId = p.getId().getRoomId();
+            RoomService.LeaveResult result = roomService.leaveRoom(userId, roomId);
             messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.leave(userId));
+            if (result.newHostId() != null) {
+                messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.hostChanged(result.newHostId()));
+            }
             gameManager.handlePlayerLeave(roomId, userId);
         }
     }

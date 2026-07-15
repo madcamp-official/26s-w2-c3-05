@@ -51,4 +51,25 @@ export function applyFaceParams(vrm: VRM, params: FaceParams) {
     setArmZ("rightUpperArm", a.rightUpper);
     setArmZ("rightLowerArm", a.rightLower);
   }
+
+  // ── 몸통 회전 — 포즈(어깨·골반) 인식 결과가 있을 때만 (신규) ──
+  // 척추→가슴→(윗가슴)→골반 순으로 나눠 적용해 상체가 한 번에 꺾이지 않고 자연스럽게 휜다.
+  if (params.bodyRotation) {
+    const b = params.bodyRotation;
+    const setBody = (
+      bone: "spine" | "chest" | "upperChest" | "hips",
+      w: number
+    ) => {
+      const node = vrm.humanoid?.getNormalizedBoneNode(bone);
+      if (!node) return; // upperChest 등 모델에 없는 본은 무시
+      node.rotation.x += (b.x * w - node.rotation.x) * 0.25; // lerp = 떨림 필터
+      node.rotation.y += (b.y * w - node.rotation.y) * 0.25;
+      node.rotation.z += (b.z * w - node.rotation.z) * 0.25;
+    };
+    setBody("spine", 0.45);
+    setBody("chest", 0.30);
+    setBody("upperChest", 0.20);
+    setBody("hips", 0.10); // 골반은 살짝만 — 전신 모델이 통째로 기우는 것 방지
+  }
+
 }

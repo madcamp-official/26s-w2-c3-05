@@ -36,6 +36,7 @@ export function useFaceLandmarker(
           if (cats) {
             // 콘솔 로그 대신 이제 상자에 기록
             faceParamsRef.current = {
+                ...faceParamsRef.current, // ← 추가: 팔·몸통 회전(포즈 루프 값) 보존
               expressions: blendshapeToExpressions(cats),
               // 행렬이 있으면 회전 갱신, 없으면 직전 값 유지
               headRotation: matrix ? matrixToHeadRotation(matrix) :

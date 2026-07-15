@@ -40,6 +40,26 @@ public class FriendController {
         return ResponseEntity.ok(friendService.getReceivedRequests(auth.getName()));
     }
 
+    // 내가 보낸 대기중 요청 목록
+    @GetMapping("/requests/sent")
+    public ResponseEntity<List<FriendDto>> sentRequests(Authentication auth) {
+        return ResponseEntity.ok(friendService.getSentRequests(auth.getName()));
+    }
+
+    // 내가 보낸 요청 취소
+    @DeleteMapping("/requests/sent/{toId}")
+    public ResponseEntity<Void> cancelSent(Authentication auth, @PathVariable String toId) {
+        friendService.cancelSentRequest(auth.getName(), toId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // 친구 삭제 (방향 무관)
+    @DeleteMapping("/{friendId}")
+    public ResponseEntity<Void> removeFriend(Authentication auth, @PathVariable String friendId) {
+        friendService.removeFriend(auth.getName(), friendId);
+        return ResponseEntity.noContent().build();
+    }
+
     // 요청 수락
     @PostMapping("/requests/{fromId}/accept")
     public ResponseEntity<Void> accept(Authentication auth, @PathVariable String fromId) {

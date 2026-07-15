@@ -21,6 +21,14 @@ public class UserController {
         return ResponseEntity.ok(userService.getProfile(auth.getName()));
     }
 
+    // 벗 찾기: 아이디/닉네임 부분일치 검색 (본인 제외 상위 10명)
+    // 리터럴 경로가 /{userId} 패턴보다 우선 매칭되므로 충돌 없음
+    @GetMapping("/search")
+    public ResponseEntity<java.util.List<com.example.demo.user.dto.UserSummaryDto>> search(
+            Authentication auth, @RequestParam String keyword) {
+        return ResponseEntity.ok(userService.searchUsers(keyword, auth.getName()));
+    }
+
     @GetMapping("/{userId}")
     public ResponseEntity<MyPageResponse> profile(@PathVariable String userId) {
         // URL 경로에 포함된 가변적인 값(경로 변수)을 추출하여 파라미터 변수에 담아줍니다.

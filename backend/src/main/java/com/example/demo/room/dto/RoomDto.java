@@ -12,6 +12,7 @@ public record RoomDto(
     Integer roundLimit,
     Integer timeLimit,
     boolean hasPw,          // 비밀번호 자체는 절대 안 내려줌
+    boolean canAccess,      // 입장 가능 여부(게임 중이면 false → 프론트 "연회중" 표시)
     long currentPlayers
 ) {
     public static RoomDto of(RoomInfo room, long currentPlayers) {
@@ -24,6 +25,7 @@ public record RoomDto(
                 room.getRoundLimit(),
                 room.getTimeLimit(),
                 room.getRoomPw() != null,
+                room.isCanAccess(),
                 currentPlayers
         );
     }

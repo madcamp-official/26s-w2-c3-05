@@ -23,7 +23,7 @@ const TIER_LABEL: Record<RankType, string> = {
   SILVER: '은(銀)',
   GOLD: '금(金)',
   PLATINUM: '백금(白金)',
-  DIAMOND: '다이아',
+  DIAMOND: '다이아(金剛)',
 };
 
 export default function RankingPage({

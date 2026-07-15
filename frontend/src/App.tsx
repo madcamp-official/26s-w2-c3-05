@@ -253,24 +253,34 @@ export async function getUserProfile(userId: string): Promise<string> {
   return byteData
 }
 
-// test required
+// 타인 프로필 (MyPageResponse camelCase → UserInfo snake_case)
 export async function getUser(userId: string): Promise<UserInfo> {
-  const response = await request<Record<string, any>>(`/users/${userId}`, {
+  const d = await request<Record<string, any>>(`/users/${encodeURIComponent(userId)}`, {
     method: "GET",
-    headers: HEADER,
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return {
+    user_id: d.userId,
+    user_pw: '',
+    registered_at: '',
+    user_nickname: d.userNickname,
+    user_profile: '',
+  };
 }
 
-// test required
-export async function searchUser(keyword: string, page: number, size: number): Promise<UserInfo> {
-  const response = await request<Record<string, any>>(`/users/search?keyword=${keyword}&page=${page}&size=${size}`, {
-    method: "GET",
-    headers: HEADER,
-  });
-  
-  return response.data
+// 벗 찾기: 아이디/닉네임 부분일치 (백엔드가 본인 제외 상위 10명 반환)
+export async function searchUser(keyword: string, _page: number, _size: number): Promise<UserInfo[]> {
+  const list = await request<Record<string, any>[]>(
+    `/users/search?keyword=${encodeURIComponent(keyword)}`,
+    { method: "GET", headers: authHeaders() },
+  );
+  return list.map((d) => ({
+    user_id: d.userId,
+    user_pw: '',
+    registered_at: '',
+    user_nickname: d.userNickname,
+    user_profile: '',
+  }));
 }
 
 // test required
@@ -306,14 +316,20 @@ export async function getUserStat(userId: string): Promise<Stat> {
   return response.data
 }
 
-// test required
+// 천하(랭킹): 어점 순 상위 100위까지 (RankingDto camelCase → Stat snake_case)
 export async function getRankings(page: number, size: number): Promise<Stat[]> {
-  const response = await request<Record<string, any>>(`/rankings?page=${page}&size=${size}`, {
+  const list = await request<Record<string, any>[]>(`/rankings?page=${page}&size=${size}`, {
     method: "GET",
-    headers: HEADER,
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return list.map((d) => ({
+    user_id: d.userId,
+    user_rank: d.userRank,
+    user_point: d.userPoint,
+    user_win: d.userWin,
+    user_lose: d.userLose,
+    user_played: d.userPlayed,
+  })) as Stat[];
 }
 
 // - - - - - - - - - - - - - - - - - - - -
@@ -596,89 +612,99 @@ export async function deleteTopic(userId: string, topicId: number): Promise<bool
 // 7. 친구 `/friends`
 // - - - - - - - - - - - - - - - - - - - -
 
-// test required
+// 벗 명부: 백엔드는 "상대방" FriendDto{userId,nickname}만 주므로
+// UserFriends 형태(from=상대, to=나)로 변환해 페이지 로직(상대 계산)과 맞춘다
 export async function getFriends(): Promise<UserFriends[]> {
-  const response = await request<Record<string, any>>(`/friends`, {
+  const me = sessionStorage.getItem('userId') ?? '';
+  const list = await request<Record<string, any>[]>(`/friends`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return list.map((d) => ({
+    from_id: d.userId,
+    to_id: me,
+    friend_date: '',
+    friend_status: 'FRIENDS',
+  }));
 }
 
-// test required
+// 내가 받은 요청: FriendDto(보낸 사람) → Notification 형태(actor_id 사용처 호환)
 export async function getFriendsRequestsToMe(): Promise<Notification[]> {
-  const response = await request<Record<string, any>>(`/friends/requests/received`, {
+  const me = sessionStorage.getItem('userId') ?? '';
+  const list = await request<Record<string, any>[]>(`/friends/requests`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return list.map((d) => ({
+    notice_num: 0n,
+    recipient_id: me,
+    actor_id: d.userId,
+    type: 'FRIEND_REQUEST',
+    is_read: false,
+    created_at: '',
+  }));
 }
 
-// test required
+// 내가 보낸 요청: FriendDto(받는 사람) → recipient_id 사용처 호환
 export async function getFriendsRequestsByMe(): Promise<Notification[]> {
-  const response = await request<Record<string, any>>(`/friends/requests/sent`, {
+  const me = sessionStorage.getItem('userId') ?? '';
+  const list = await request<Record<string, any>[]>(`/friends/requests/sent`, {
     method: "GET",
-    headers: HEADER
+    headers: authHeaders(),
   });
-  
-  return response.data
+  return list.map((d) => ({
+    notice_num: 0n,
+    recipient_id: d.userId,
+    actor_id: me,
+    type: 'FRIEND_REQUEST',
+    is_read: false,
+    created_at: '',
+  }));
 }
 
-// test required
-export async function sendFriendsRequests(userId: string, toUserId: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/friends/requests`, {
+// 친구 요청 보내기 (보낸이는 JWT로 서버가 식별)
+export async function sendFriendsRequests(_userId: string, toUserId: string): Promise<boolean> {
+  await request<void>(`/friends/requests`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
-      recipient_id: toUserId
-    })
+    headers: authHeaders(),
+    body: JSON.stringify({ toId: toUserId }),
   });
-  
-  return response.success
+  return true;
 }
 
-// test required
-export async function acceptFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}/accept`, {
+// 요청 수락
+export async function acceptFriendsRequests(_userId: string, fromUserId: string): Promise<boolean> {
+  await request<void>(`/friends/requests/${encodeURIComponent(fromUserId)}/accept`, {
     method: "POST",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
-      actor_id: fromUserId
-    })
+    headers: authHeaders(),
   });
-  
-  return response.success
+  return true;
 }
 
-// test required
-export async function deleteFriendsRequests(userId: string, fromUserId: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/friends/requests/${fromUserId}`, {
-    method: "DELETE",
-    headers: HEADER,
-    body: JSON.stringify({
-      user_id: userId, // get userid from somewhere 
-      actor_id: fromUserId
-    })
-  });
-  
-  return response.success
+// 요청 거절(받은 것) 또는 취소(보낸 것) — 페이지가 한 함수로 겸용하므로
+// 받은요청 거절을 먼저 시도하고, 없으면(404) 보낸요청 취소로 재시도
+export async function deleteFriendsRequests(_userId: string, otherId: string): Promise<boolean> {
+  try {
+    await request<void>(`/friends/requests/${encodeURIComponent(otherId)}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  } catch {
+    await request<void>(`/friends/requests/sent/${encodeURIComponent(otherId)}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    });
+  }
+  return true;
 }
 
-// test required
-export async function deleteFriends(userId: string): Promise<boolean> {
-  const response = await request<Record<string, any>>(`/friends/${userId}`, {
+// 친구 삭제 (방향 무관)
+export async function deleteFriends(friendId: string): Promise<boolean> {
+  await request<void>(`/friends/${encodeURIComponent(friendId)}`, {
     method: "DELETE",
-    headers: HEADER,
-    body: JSON.stringify({
-      to_id: userId // get userid (friend) from somewhere 
-    })
+    headers: authHeaders(),
   });
-  
-  return response.success
+  return true;
 }
 
 

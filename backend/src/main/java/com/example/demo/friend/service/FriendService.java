@@ -84,6 +84,35 @@ public class FriendService {
         userFriendsRepository.delete(relation);
     }
 
+    // 내가 보낸 대기중 요청 목록 (받는 사람 정보로 변환)
+    @Transactional(readOnly = true)
+    public List<FriendDto> getSentRequests(String myId) {
+        return userFriendsRepository.findAllById_FromIdAndFriendStatus(myId, FriendType.REQUESTED)
+            .stream()
+            .map(r -> new FriendDto(r.getToUser().getUserId(), r.getToUser().getUserNickname()))
+            .toList();
+    }
+
+    // 내가 보낸 요청 취소: (me → toId) REQUESTED 행 삭제
+    @Transactional
+    public void cancelSentRequest(String myId, String toId) {
+        UserFriends relation = userFriendsRepository.findById(new UserFriendsId(myId, toId))
+            .filter(r -> r.getFriendStatus() == FriendType.REQUESTED)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "보낸 요청이 없습니다."));
+        userFriendsRepository.delete(relation);
+    }
+
+    // 친구 삭제: 방향 무관하게 FRIENDS 관계 행 삭제
+    @Transactional
+    public void removeFriend(String myId, String otherId) {
+        UserFriends relation = userFriendsRepository.findById(new UserFriendsId(myId, otherId))
+            .filter(r -> r.getFriendStatus() == FriendType.FRIENDS)
+            .or(() -> userFriendsRepository.findById(new UserFriendsId(otherId, myId))
+                .filter(r -> r.getFriendStatus() == FriendType.FRIENDS))
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "벗이 아닙니다."));
+        userFriendsRepository.delete(relation);
+    }
+
     // 내가 받은 대기중 요청 목록 (보낸 사람 정보로 변환)
     @Transactional(readOnly = true)
     public List<FriendDto> getReceivedRequests(String myId) {

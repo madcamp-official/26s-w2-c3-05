@@ -73,6 +73,33 @@ public class UserService {
         user.setUserNickname(nickname); // 더티체킹으로 UPDATE
     }
 
+    // 천하(랭킹): 어점 순 상위 최대 100위까지만 공개
+    private static final int RANKING_CAP = 100;
+
+    @Transactional(readOnly = true)
+    public java.util.List<com.example.demo.user.dto.RankingDto> getRankings(int page, int size) {
+        int safePage = Math.max(1, page);
+        int safeSize = Math.max(1, Math.min(size, RANKING_CAP));
+        int offset = (safePage - 1) * safeSize;
+        if (offset >= RANKING_CAP) return java.util.List.of();  // 100위 밖은 없음
+        int limit = Math.min(safeSize, RANKING_CAP - offset);   // 마지막 페이지는 잘라서
+        return statRepository
+            .findAllByOrderByUserPointDescUserIdAsc(
+                org.springframework.data.domain.PageRequest.of(offset / limit, limit))
+            .stream().map(com.example.demo.user.dto.RankingDto::of).toList();
+    }
+
+    // 벗 찾기: 아이디/닉네임 부분일치 (본인 제외, 상위 10명)
+    @Transactional(readOnly = true)
+    public java.util.List<com.example.demo.user.dto.UserSummaryDto> searchUsers(String keyword, String myId) {
+        return userRepository
+            .findTop10ByUserIdContainingIgnoreCaseOrUserNicknameContainingIgnoreCase(keyword, keyword)
+            .stream()
+            .filter(u -> !u.getUserId().equals(myId))
+            .map(u -> new com.example.demo.user.dto.UserSummaryDto(u.getUserId(), u.getUserNickname()))
+            .toList();
+    }
+
     @Transactional(readOnly = true)
     public boolean isUserIdAvailable(String userId) {
         return !userRepository.existsById(userId);

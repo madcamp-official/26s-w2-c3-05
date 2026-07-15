@@ -6,6 +6,7 @@ import com.example.demo.room.game.GameManager;
 import com.example.demo.room.repository.PlayerInfoRepository;
 import com.example.demo.room.service.RoomService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import java.security.Principal;
 // 소켓이 "끊긴" 순간(탭 닫기·새로고침·네트워크 단절)을 감지해서
 // 같은 방 사람들에게 LEAVE를 방송하고, 게임 중이면 이탈 처리까지 위임한다.
 // (명시적 leave 버튼을 못 누르고 사라지는 케이스를 커버)
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class WebSocketEventListener {
@@ -33,12 +35,19 @@ public class WebSocketEventListener {
 
         for (PlayerInfo p : playerInfoRepository.findAllById_UserId(userId)) {
             Integer roomId = p.getId().getRoomId();
-            RoomService.LeaveResult result = roomService.leaveRoom(userId, roomId);
-            messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.leave(userId));
-            if (result.newHostId() != null) {
-                messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.hostChanged(result.newHostId()));
+            try {
+                // 명시적 leave와 동일하게 DB 정리(참가 기록 삭제·방장 위임·빈 방 삭제)까지 수행
+                RoomService.LeaveResult result = roomService.leaveRoom(userId, roomId);
+                messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.leave(userId));
+                if (result.newHostId() != null) {
+                    messaging.convertAndSend("/topic/rooms/" + roomId, RoomEvent.hostChanged(result.newHostId()));
+                }
+                gameManager.handlePlayerLeave(roomId, userId);
+            } catch (Exception e) {
+                // 명시적 leave와 동시 발생(이미 나간 방=NOT_FOUND) 등 한 방 처리가 실패해도
+                // 나머지 방 정리는 계속되고, 예외가 리스너 밖으로 튀지 않게 한다.
+                log.warn("disconnect 방 정리 실패 room={} user={}: {}", roomId, userId, e.toString());
             }
-            gameManager.handlePlayerLeave(roomId, userId);
         }
     }
 }

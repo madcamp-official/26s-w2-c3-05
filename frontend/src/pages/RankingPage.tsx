@@ -4,6 +4,8 @@ import { RANK_HANJA } from '../constants/game';
 import { panel, ghostBtn, Divider, Seal, Backdrop, GOLD } from '../components/ui';
 import { getRankings, getUser } from '../App';
 
+import { useAudio } from '../components/AudioContext';
+
 const PAGE_SIZE = 20;
 
 const TIER_COLOR: Record<RankType, string> = {
@@ -36,6 +38,11 @@ export default function RankingPage({
   const [profiles, setProfiles] = useState<Record<string, UserInfo>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const { setMusicSrc } = useAudio();
+    useEffect(() => {
+      setMusicSrc('../../assets/bgm/bgm_gameplay2.mp3');
+    }, [setMusicSrc]);
 
   const load = useCallback(async (p: number) => {
     setLoading(true);

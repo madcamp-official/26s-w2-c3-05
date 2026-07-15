@@ -24,28 +24,32 @@ export default function LobbyPage({
 }) {
 
   const { setMusicSrc } = useAudio();
-    const [rooms, setRooms] = useState<Room[]>([]);
-    const [refreshing, setRefreshing] = useState(false);
+  useEffect(() => {
+    setMusicSrc('../../assets/bgm/bgm_lobby.mp3');
+  }, [setMusicSrc]);
+  
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
 
     // 방 목록 갱신 (버튼·폴링 공용) — 페이지 이동 없이 목록만 다시 불러온다
-    const refreshRooms = async () => {
-      setRefreshing(true);
-      try {
-        setRooms(await getRooms());
-      } catch {
-        setRooms([]);
-      } finally {
-        setRefreshing(false);
-      }
-    };
+  const refreshRooms = async () => {
+    setRefreshing(true);
+    try {
+      setRooms(await getRooms());
+    } catch {
+      setRooms([]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-    useEffect(() => {
-      refreshRooms();
-      // 새 연회가 열리면 자동으로도 보이게 10초마다 동기화
-      const poll = window.setInterval(refreshRooms, 10000);
-      return () => window.clearInterval(poll);
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+  useEffect(() => {
+    refreshRooms();
+    // 새 연회가 열리면 자동으로도 보이게 10초마다 동기화
+    const poll = window.setInterval(refreshRooms, 10000);
+    return () => window.clearInterval(poll);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <Backdrop

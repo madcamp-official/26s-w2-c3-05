@@ -11,16 +11,18 @@ public record FaceBroadcast(
     public record FacePayload(
             Map<String, Double> expressions,             // { aa: 0.7, blinkLeft: 0.1, ... }
             HeadRotation headRotation,
-            ArmRotations armRotations,                   // 팔 회전 (포즈 미인식이면 null)
-            BodyRotation bodyRotation,                   // ← 추가: 몸통 회전 (미인식이면 null)
+            ArmDirections armDirections,                 // 팔 뼈 3D 방향 (포즈 미인식이면 null)
+            BodyRotation bodyRotation,                   // 몸통 회전 (미인식이면 null)
             long timestamp
     ) {}
 
     public record HeadRotation(double x, double y, double z, double w) {}
 
-    // 프론트 ArmRotations와 1:1 대응 — 없으면 Jackson이 조용히 버려서 필드 명시 필수
-    public record ArmRotations(double leftUpper, double leftLower,
-                               double rightUpper, double rightLower) {}
+    // 팔 뼈가 향할 3D 단위 방향 (프론트 ArmDirections와 1:1 대응)
+    // — 없으면 Jackson이 조용히 버려서 필드 명시 필수
+    public record Vec3(double x, double y, double z) {}
+    public record ArmDirections(Vec3 leftUpper, Vec3 leftLower,
+                                Vec3 rightUpper, Vec3 rightLower) {}
 
     // 프론트 BodyRotation과 1:1 대응 (x=앞뒤 숙임 / y=좌우 비틀기 / z=좌우 기울기)
     public record BodyRotation(double x, double y, double z) {}

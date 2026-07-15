@@ -3,19 +3,24 @@ import type { MutableRefObject } from "react";
 export type FaceParams = {
   expressions: Record<string, number>;                       // { aa: 0.7, blinkLeft: 0.1, ... }
   headRotation: { x: number; y: number; z: number; w: number }; // 쿼터니언 (5단계에서 사용)
-  armRotations?: ArmRotations;   // ← 추가 (없으면 팔 미인식 상태)
-  bodyRotation?: BodyRotation;   // ← 추가 (없으면 몸통 미인식 상태)
+  armDirections?: ArmDirections; // 팔 뼈가 향할 3D 방향(없으면 팔 미인식 상태)
+  bodyRotation?: BodyRotation;   // 상체(척추·가슴) 회전(없으면 몸통 미인식 상태)
   timestamp: number;
 };
 
-export type ArmRotations = {
-  leftUpper: number;  // 왼쪽 위팔 z회전(라디안)
-  leftLower: number;  // 왼쪽 아래팔
-  rightUpper: number;
-  rightLower: number;
+export type Vec3 = { x: number; y: number; z: number };
+
+// 각 팔 뼈(위팔/아래팔)가 가리켜야 할 "몸통 기준" 단위 방향 벡터.
+// 화면 평면 각도 1개가 아니라 3D 방향이라 앞으로 뻗기·비틀기·깊이까지 반영된다.
+// 좌표계: 몸통 기준(x=몸통 오른쪽, y=위, z=정면). 아바타 쪽에서 이 방향으로 뼈를 조준(quaternion)한다.
+export type ArmDirections = {
+  leftUpper: Vec3;   // 아바타 왼팔 위팔 (어깨→팔꿈치)
+  leftLower: Vec3;   // 아바타 왼팔 아래팔 (팔꿈치→손목)
+  rightUpper: Vec3;
+  rightLower: Vec3;
 };
 
-// ← 추가: 상체(척추·가슴) 회전. 오일러 라디안
+// 상체(척추·가슴) 회전. 오일러 라디안 — 어깨선·척추로 만든 몸통축에서 뽑는다.
 export type BodyRotation = {
   x: number; // 앞뒤 숙임(pitch): +면 상체를 앞으로 숙임
   y: number; // 좌우 비틀기(yaw): 몸통을 좌우로 트는 회전

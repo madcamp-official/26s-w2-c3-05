@@ -248,33 +248,98 @@
 
 ## 산출물 및 실행 방법
 
-- **산출물 설명:**
-- **실행 환경:**
-- **실행 방법:**
-- **시연 영상 / 이미지:** (선택)
+### 산출물 설명
 
-### 실행 방법
+**cheonha(천하)** — 궁중 '연회'를 배경으로, 매 라운드 한 명이 **공주(술래)** 로 간택되고 나머지 **신하** 들이 공주를 웃기기 위해 겨루는 **다대일(N:1) 실시간 코미디 파티 게임**입니다. 실제 화상 대신, 웹캠으로 추적한 표정·머리 움직임을 **VRM 3D 아바타**에 실시간으로 입혀 얼굴을 드러내지 않고도 서로의 표정과 반응을 확인할 수 있습니다.
 
-```bash
-# 환경 설정
-cp .env.example .env
+- **실시간 인터랙션(선택 옵션)**: STOMP over WebSocket으로 라운드 진행·점수·채팅을 방 전원에게 브로드캐스트하고, WebRTC 메시(P2P)로 음성을, 소켓 중계로 얼굴 파라미터를 실시간 동기화합니다.
+- **게임 규칙**: 공주가 웃으면(웹캠으로 happy 감지) 신하들이 어점(御點)을 획득합니다. 공주는 원하는 신하에게 어점을 직접 하사하거나 마이크를 강제로 음소거할 수 있습니다. 라운드마다 공주가 순환하며, 최종 어점 합계로 승자를 가리고 전적·랭킹에 반영합니다.
+- **부가 기능**: 회원가입·로그인(JWT), 로비/방 생성·입장, 전적·랭킹, 친구, 알림.
 
-# 의존성 설치
-npm install   # 또는 pip install -r requirements.txt 등
+> 배포 주소: https://cheonha.duckdns.org
 
-# 실행
-npm run dev   # 또는 python main.py 등
-```
-
-### 기술 구성
+### 실행 환경 (기술 스택)
 
 | 분류 | 사용 기술 |
 |---|---|
-| 핵심 기술 |  |
-| 실행 환경 |  |
-| 데이터 저장 |  |
-| 외부 API / 서비스 |  |
-| 기타 |  |
+| 프론트엔드 | React 18 · TypeScript · Vite 6 |
+| 실시간 · 미디어 | @stomp/stompjs (STOMP over WebSocket) · WebRTC 메시(P2P 음성, STUN/TURN) · MediaPipe Tasks Vision (얼굴·포즈 트래킹) · three.js + @pixiv/three-vrm (VRM 아바타) |
+| 백엔드 | Spring Boot 3.5 · Java 17 · Spring Web/WebSocket/Security/Data JPA · JWT(jjwt) |
+| 데이터베이스 | PostgreSQL 16 |
+| 인프라 · 배포 | Docker Compose · nginx(리버스 프록시·TLS 종단) · Let's Encrypt · DuckDNS |
+| 빌드 도구 | Gradle 8 · npm |
+
+### 사전 요구 사항
+
+- **Docker Compose 배포**: Docker / Docker Compose
+- **로컬 개발 실행**: Node.js 20+, JDK 17, PostgreSQL 16 (또는 Docker)
+- 게임 플레이에는 **웹캠·마이크**가 필요합니다. `getUserMedia`/WebRTC는 보안 컨텍스트(**HTTPS 또는 localhost**)에서만 동작합니다.
+
+### 환경 변수
+
+루트에 `.env`를 만들어 채웁니다 (`cp .env.example .env`). 백엔드·DB 컨테이너와 Docker Compose가 공유합니다.
+
+| 변수 | 사용처 | 설명 |
+|---|---|---|
+| `POSTGRES_DB` / `POSTGRES_USER` / `POSTGRES_PASSWORD` | PostgreSQL | DB 이름 · 계정 · 비밀번호 |
+| `DB_URL` | 백엔드 | JDBC URL. 로컬: `jdbc:postgresql://localhost:5432/<db>` · 컴포즈에서는 `//postgres:5432/<db>`로 자동 주입 |
+| `DB_USERNAME` / `DB_PASSWORD` | 백엔드 | DB 접속 계정 (보통 `POSTGRES_USER`/`POSTGRES_PASSWORD`와 동일) |
+| `JWT_SECRET` | 백엔드 | JWT 서명 키 (32자 이상) |
+
+프론트엔드는 빌드 시점 변수를 사용합니다(개발 시 기본값 내장, 배포 값은 `frontend/.env.production`).
+
+| 변수 | 개발 기본값 | 배포(`frontend/.env.production`) |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8080` | 빈 값 → 동일 origin, nginx가 백엔드로 프록시 |
+| `VITE_WS_URL` | `ws://localhost:8080/ws` | `wss://cheonha.duckdns.org/ws` |
+
+### 로컬 개발 실행
+
+**1) PostgreSQL** — `localhost:5432`에 띄우고 스키마를 초기화합니다. Docker를 쓰면 `docs/db/database.sql`이 최초 기동 시 자동 실행됩니다.
+
+```bash
+docker run -d --name cheonha-db \
+  -e POSTGRES_DB="$POSTGRES_DB" \
+  -e POSTGRES_USER="$POSTGRES_USER" \
+  -e POSTGRES_PASSWORD="$POSTGRES_PASSWORD" \
+  -p 5432:5432 \
+  -v "$(pwd)/docs/db/database.sql:/docker-entrypoint-initdb.d/init.sql" \
+  postgres:16-alpine
+```
+
+**2) 백엔드** (Spring Boot, `:8080`) — `local` 프로파일로 기동하며 `.env`의 `DB_URL`·`DB_USERNAME`·`DB_PASSWORD`·`JWT_SECRET`을 읽습니다. 이 값들이 실행 프로세스에 제공되도록 하세요(루트 `.env` 참조 또는 셸 export).
+
+```bash
+cd backend
+./gradlew bootRun
+```
+
+**3) 프론트엔드** (Vite dev 서버, `:5173`)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+브라우저에서 http://localhost:5173 에 접속합니다. 프론트는 기본값으로 `localhost:8080`의 REST/WebSocket에 연결합니다.
+
+### 프로덕션 배포 (Docker Compose)
+
+nginx가 프론트 정적 빌드를 서빙하고 TLS를 종단하며 REST·`/ws`를 백엔드로 프록시합니다.
+
+```bash
+cp .env.example .env        # 값 채우기
+docker compose up -d --build
+```
+
+세 컨테이너가 기동합니다 — `cheonha-db`(PostgreSQL) · `cheonha-backend`(`:8080`, 내부 전용) · `cheonha-frontend`(nginx, `:80`/`:443` 공개).
+
+> **사전 준비**: 도메인 DNS를 서버 IP로 연결, `80`·`443` 포트 개방, TLS 인증서를 `/home/ubuntu/certs`(= `docker-compose.yml`의 마운트 경로)에 배치. 도메인·인증서 경로는 `frontend/nginx.conf`에서 관리합니다.
+
+### 시연 영상 / 이미지
+
+<!-- 시연 영상 링크 및 스크린샷 (작성 예정) -->
 
 ---
 

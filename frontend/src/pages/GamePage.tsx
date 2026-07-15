@@ -90,6 +90,17 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
   };
   useEffect(() => () => Object.values(bowTimers.current).forEach(clearTimeout), []);
 
+  // 라운드가 바뀌면 공주 아바타 위에 연회 주제를 잠깐(10초) 띄운다.
+  // 채팅 시스템 메시지만으로는 놓치기 쉬워 눈에 띄는 배너로 별도 안내.
+  const [topic, setTopic] = useState<string | null>(null);
+  const topicTimer = useRef<number>();
+  const showTopic = (text: string) => {
+    setTopic(text);
+    window.clearTimeout(topicTimer.current);
+    topicTimer.current = window.setTimeout(() => setTopic(null), 10000);
+  };
+  useEffect(() => () => window.clearTimeout(topicTimer.current), []);
+
   // 엎드리기 버튼: 내 화면에서 재생 + 같은 방 전원에게 중계
   const triggerBow = () => {
     playBow(nick);
@@ -176,7 +187,10 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
         kind: 'system',
         text: `제${ev.round}연 개막 — ${idToNick(ev.princessId)} 님이 공주로 간택되셨사옵니다 ♕`,
       });
-      if (ev.topicHead) pushChat({ kind: 'system', text: `이번 연회의 주제: 「${ev.topicHead}」` });
+      if (ev.topicHead) {
+        pushChat({ kind: 'system', text: `이번 연회의 주제: 「${ev.topicHead}」` });
+        showTopic(ev.topicHead); // 공주 위 배너로도 10초간 안내
+      }
     } else if (ev.type === 'LAUGH') {
       setG((prev) => ({ ...prev, scores: scoresToNick(ev.scores) }));
       pushChat({ kind: 'system', text: '공주께서 웃음을 터뜨리셨사옵니다! 하인들에게 어점이 내려졌사옵니다 ✦' });
@@ -902,6 +916,51 @@ export default function GamePage({ nick, room, firstEvent, onFinish, onAborted, 
               </span>
             </div>
           </div>
+
+          {/* 연회 주제 배너 — 라운드 시작 시 공주 아바타 위쪽에 10초간 표시 */}
+          {topic && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 72,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                zIndex: 30, // 아바타 공유 캔버스(zIndex 25) 위로
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 6,
+                maxWidth: 'min(70%, 560px)',
+                padding: '13px 28px',
+                borderRadius: 12,
+                background: 'rgba(18,8,6,.9)',
+                border: `1px solid ${GOLD(0.65)}`,
+                boxShadow: `inset 0 0 0 3px rgba(18,8,6,.5), inset 0 0 0 4px ${GOLD(0.2)}, 0 12px 34px rgba(0,0,0,.55)`,
+                backdropFilter: 'blur(6px)',
+                textAlign: 'center',
+                pointerEvents: 'none',
+                animation: 'fadeIn .35s ease both',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'rgba(238,217,164,.72)', fontSize: 11.5, letterSpacing: 3 }}>
+                <span style={{ color: '#eed9a4' }}>❖</span>
+                이번 연회의 주제
+                <span style={{ color: 'rgba(238,217,164,.4)', fontSize: 10.5, letterSpacing: 1 }}>宴題</span>
+              </div>
+              <div
+                style={{
+                  color: '#f5e9cf',
+                  fontSize: 20,
+                  fontWeight: 700,
+                  letterSpacing: 1,
+                  lineHeight: 1.3,
+                  fontFamily: "'Song Myung', serif",
+                }}
+              >
+                「{topic}」
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 간택 연출 */}
